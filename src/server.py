@@ -1,15 +1,18 @@
 from flask import Flask
 from flask_http_middleware import MiddlewareManager
 
-from api.middlewares.metrics import MetricsMiddleware
+# from api.middlewares.metrics import MetricsMiddleware
 from api.middlewares.resp import RespMiddleware
+from src import config
 
 
 def register_routes(a):
     # 注册路由函数
-    from source.api import main as repos_blueprint
+    from api.routes.index import main as index_blueprint
+    from api.routes.repo import main as repo_blueprint
 
-    a.register_blueprint(repos_blueprint, url_prefix='/repos')
+    a.register_blueprint(index_blueprint, url_prefix='/')
+    a.register_blueprint(repo_blueprint, url_prefix='/repo')
 
 
 def register_middleware(a):
@@ -21,10 +24,10 @@ def register_middleware(a):
 
 
 def configured_app():
-    a = Flask(__name__)
+    a = Flask(__name__, template_folder=config.templates_dir, static_folder=config.static_dir)
     a.config['SECRET_KEY'] = 'secret_key'
 
-    # register_routes(a)
+    register_routes(a)
     register_middleware(a)
     return a
 

@@ -1,4 +1,6 @@
 flask~=2.2.2
 GitPython~=3.1.31
 WebOb~=1.8.7
+flask-pydantic~=0.11.0
 flask-http-middleware~=0.2.1
+pydantic~=1.10.4
