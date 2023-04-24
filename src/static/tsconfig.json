@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "lib": ["dom", "esnext"],
+        "incremental": true,
+        "target": "ES5",
+        "module": "commonjs",
+        "outDir": "compileJs",
+    },
+    "include": [
+        "ts/*.ts",
+    ]
+}

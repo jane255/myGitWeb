@@ -4,3 +4,4 @@ WebOb~=1.8.7
 flask-pydantic~=0.11.0
 flask-http-middleware~=0.2.1
 pydantic~=1.10.4
+watchdog~=3.0.0
