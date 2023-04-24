@@ -1,12 +1,12 @@
 const log = console.log.bind(console)
 
-const e = (sel: string) :Element => document.querySelector(sel)
+const e = (sel: string) : HTMLSelectElement | null => document.querySelector(sel)
 
-const es = (sel: string) :NodeListOf<Element> => document.querySelectorAll(sel)
+const es = (sel: string) : NodeListOf<HTMLSelectElement | null> => document.querySelectorAll(sel)
 
-const appendHtml = (element: Element, html: string) => element.insertAdjacentHTML('beforeend', html)
+const appendHtml = (element: HTMLSelectElement | null, html: string) => element.insertAdjacentHTML('beforeend', html)
 
-const bindEvent = (element: string, eventName: string, callback: () => void) => {
+const bindEvent = (element: string, eventName: string, callback: (event) => void) => {
     let ele = e(element)
     ele.addEventListener(eventName, callback)
 }
