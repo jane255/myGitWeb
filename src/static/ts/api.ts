@@ -1,11 +1,16 @@
 class API {
-    static call(method: string, path: string, data: object, callback: (r) => void) {
-        log(`api call ${method} ${path} ${data}`)
+    static call(
+        method: string,
+        path: string,
+        data: apiForm,
+        callback: ResponseCallback
+    ) {
+        log(`api call ${method} ${path} ${JSON.stringify(data)}`)
         ajax(method, path, data, callback)
     }
 }
 
-class Method {
-    static Get = 'GET'
-    static Post = 'POST'
+enum Method {
+    Get = 'GET',
+    Post = 'POST',
 }

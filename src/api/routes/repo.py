@@ -1,3 +1,4 @@
+import json
 import os
 
 from flask import Blueprint, render_template, request
@@ -18,8 +19,8 @@ def index():
 
 
 @main.route('/add', methods=['POST'])
-def add() -> dict:
-    form = request.get_json()
+def add():
+    form = json.loads(request.get_data(as_text=True))
     log("add form", form)
     repo_name = form.get("repo_name")
     repo_suffix = make_repo(repo_name)
