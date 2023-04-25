@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Git</title>
+    <title>GitWeb</title>
     <link rel="stylesheet" href="../static/css/index.css">
 
 </head>
@@ -14,6 +14,86 @@
     <div class="class-clone-address">
 
     </div>
+</div>
+
+<div class="class-repo-box">
+    <div class="room-container">
+        <button type="submit" class="class-button-add-repo" data-action="showInput">创建新仓库</button>
+        <input class="add-room-input" type="text" placeholder="请输入新仓库名，不能用中文哦">
+    </div>
+{#    <div class="msg-container">#}
+{#        <!-- 消息群组-->#}
+{#        <div class="msg-room">#}
+{#            <div class="msg-room-list">#}
+{#                {% for room in room_list %}#}
+{#                    {% if room.id == current_room.id %}#}
+{#                    <div class="msg-room-name current-room div-room-{{room.id}}" data-id={{room.id}}>{{room.name}}</div>#}
+{#                    {% else %}#}
+{#                    <div class="msg-room-name div-room-{{room.id}}" data-id={{room.id}}>{{room.name}}</div>#}
+{#                    {% endif %}#}
+{#                {% endfor %}#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- 消息体 -->#}
+{#        <div class="msg-body" data-room_id={{current_room.id}}>#}
+{#            <div class="msg-title">#}
+{#                <div id="id-title">{{current_room.name}}</div>#}
+{#            </div>#}
+{#            <div class="msg-list">#}
+{#                {% for m in msg_list %}#}
+{#                    {% if m.user_id == current_user.id %}#}
+{#                        <div class="msg-cell-me">#}
+{#                            <div class="msg-cell-body">#}
+{#                                <div class="msg-cell-me-username">#}
+{#                                    {{m.username}}#}
+{#                                </div>#}
+{#                                <div id="msg-cell-me-msg" class='msg-cell-msg' data-msg_id={{m.id}}>#}
+{#                                    {{m.msg}}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                            <div class="msg-cell-avatar">#}
+{#                                <img class="msg-cell-avatar-img" src="/static/img/avatar/{{m.avatar}}">#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    {% else %}#}
+{#                        <div class="msg-cell-you">#}
+{#                            <div class="msg-cell-avatar">#}
+{#                                <img class="msg-cell-avatar-img" src="/static/img/avatar/{{m.avatar}}">#}
+{#                            </div>#}
+{#                            <div class="msg-cell-body">#}
+{#                                <div class="msg-cell-you-username">#}
+{#                                    {{m.username}}#}
+{#                                </div>#}
+{#                                <div id="msg-cell-you-msg" class='msg-cell-msg' data-msg_id={{m.id}}>#}
+{#                                    {{m.msg}}#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    {% endif %}#}
+{#                {% endfor %}#}
+{#<!--                        <div class="msg-cell-notice">我上线啦</div>-->#}
+{#            </div>#}
+{#            <div class="msg-input">#}
+{#                <textarea id="id-input" placeholder="输入消息 按回车发送" data-action="msg-send"></textarea>#}
+{#            </div>#}
+{#        </div>#}
+{##}
+{#        <!-- 消息成员 -->#}
+{#        <div class="msg-member">#}
+{#            <div class="msg-member-title">群成员</div>#}
+{#            <div class="member-list">#}
+{#                {% for m in member_list %}#}
+{#                <div class="msg-member-cell" id="msg-member-cell-{{m.id}}">#}
+{#                    <div class="msg-member-avatar">#}
+{#                        <img class="msg-member-avatar-img" src="/static/img/avatar/{{m.avatar}}">#}
+{#                    </div>#}
+{#                    <div class="msg-member-username">{{m.username}}</div>#}
+{#                </div>#}
+{#            {% endfor %}#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
 </div>
 
 <!-- 工具 -->

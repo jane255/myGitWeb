@@ -4,14 +4,29 @@ import typing as t
 from pathlib import Path
 
 from flask import Blueprint, Response, request
-
+from flask_httpauth import HTTPBasicAuth
 from src.api.routes import subprocessio
 from src.utils import log
 
 main = Blueprint('repos', __name__)
 
 
+auth = HTTPBasicAuth()
+
+users = {
+    "jane": '123',
+}
+
+
+@auth.verify_password
+def verify_password(username, password):
+    log("verify_password", username, password)
+    if username in users and users.get(username) == password:
+        return username
+
+
 @main.route('/<repo_name>/info/refs', methods=['GET'])
+@auth.login_required
 def repos_handle_refs(repo_name: str):
     service = request.args.get("service")
     log(f"repos_handle_refs -- repo_name:{repo_name}, service:{service}")
