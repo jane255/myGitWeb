@@ -163,3 +163,4 @@ cython_debug/
 repos/*
 src/static/auto_build.py
 src/static/compileJs/*
+data/*

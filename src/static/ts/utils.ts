@@ -4,7 +4,9 @@ const e = (sel: string) : HTMLSelectElement => document.querySelector(sel)
 
 const es = (sel: string) : NodeListOf<HTMLSelectElement> => document.querySelectorAll(sel)
 
-const appendHtml = (element: HTMLSelectElement, html: string) => element.insertAdjacentHTML('beforeend', html)
+const appendHtml = (element: HTMLSelectElement, html: string) => {
+    element.insertAdjacentHTML('beforeend', html)
+}
 
 const bindEvent = (element: string, eventName: string, callback: EventCallback) => {
     let ele = e(element)
