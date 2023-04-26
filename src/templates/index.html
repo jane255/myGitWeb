@@ -7,24 +7,14 @@
 
 </head>
 <body>
-<div>
-    <br>
-    <input id="id-input-msg" type="text" placeholder="请输入仓库名">
-    <button id="id-button-send" data-action="send">创建新仓库</button>
-    <div class="class-clone-address">
-
-    </div>
-</div>
-
-<div class="class-repo-box">
-    <div class="room-container">
+<div class="class-box">
+    <div class="class-form-add-repo">
         <button type="submit" class="class-button-add-repo" data-action="showInput">创建新仓库</button>
-        <input class="add-room-input" type="text" placeholder="请输入新仓库名，不能用中文哦">
+        <input class="class-input-add-repo" type="text" placeholder="请输入新仓库名，不能用中文哦">
     </div>
-{#    <div class="msg-container">#}
-{#        <!-- 消息群组-->#}
-{#        <div class="msg-room">#}
-{#            <div class="msg-room-list">#}
+    <div class="class-container">
+        <!-- 消息群组-->
+        <div class="class-repo-list">
 {#                {% for room in room_list %}#}
 {#                    {% if room.id == current_room.id %}#}
 {#                    <div class="msg-room-name current-room div-room-{{room.id}}" data-id={{room.id}}>{{room.name}}</div>#}
@@ -32,10 +22,9 @@
 {#                    <div class="msg-room-name div-room-{{room.id}}" data-id={{room.id}}>{{room.name}}</div>#}
 {#                    {% endif %}#}
 {#                {% endfor %}#}
-{#            </div>#}
-{#        </div>#}
-{##}
-{#        <!-- 消息体 -->#}
+        </div>
+
+        <!-- 消息体 -->
 {#        <div class="msg-body" data-room_id={{current_room.id}}>#}
 {#            <div class="msg-title">#}
 {#                <div id="id-title">{{current_room.name}}</div>#}
@@ -72,14 +61,13 @@
 {#                        </div>#}
 {#                    {% endif %}#}
 {#                {% endfor %}#}
-{#<!--                        <div class="msg-cell-notice">我上线啦</div>-->#}
 {#            </div>#}
 {#            <div class="msg-input">#}
 {#                <textarea id="id-input" placeholder="输入消息 按回车发送" data-action="msg-send"></textarea>#}
 {#            </div>#}
 {#        </div>#}
-{##}
-{#        <!-- 消息成员 -->#}
+
+        <!-- 消息成员 -->
 {#        <div class="msg-member">#}
 {#            <div class="msg-member-title">群成员</div>#}
 {#            <div class="member-list">#}
@@ -93,7 +81,7 @@
 {#            {% endfor %}#}
 {#            </div>#}
 {#        </div>#}
-{#    </div>#}
+    </div>
 </div>
 
 <!-- 工具 -->

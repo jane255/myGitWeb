@@ -36,28 +36,23 @@ class Avatar extends GuaObject {
 
     static bindEvent() {
         let self = this
-        let sel = self.avatarSel
-        sel.addEventListener('click', function(event){
+        let avatarSel = self.avatarSel
+        avatarSel.addEventListener('click', function(event){
             // 我们可以通过 event.target 来得到被点击的元素
-            let self = event.target
-            log("self", self)
+            let target = event.target as HTMLSelectElement
             // log('被点击的元素是', self, self.dataset.value, Login.avatar)
             let inputAvatar: HTMLSelectElement = e(".input-avatar")
             if (inputAvatar.value.length > 0) {
                 let selected = e(`.selected`)
                 selected.className = "class-avatar"
             }
-            inputAvatar.value = self.dataset.value
-            self.className += " selected"
+            inputAvatar.value = target.dataset.value
+            target.className += " selected"
         })
     }
 }
 
 
-function __main() {
-    Avatar.initAvatar()
-    Avatar.bindEvent()
-}
-
-__main()
+Avatar.initAvatar()
+Avatar.bindEvent()
 

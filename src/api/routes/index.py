@@ -4,20 +4,20 @@ from flask import (
     url_for, request, session,
 )
 
-from api.routes import login_required
+from api.routes import login_required, current_user
 from models.user import User
 from utils import all_avatar, log
 
 main = Blueprint('', __name__)
 
 
-@main.route('/')
+@main.route('/', methods=['GET'])
 @login_required
 def index():
     return redirect(url_for('repo.index'))
 
 
-@main.route('/avatar/list')
+@main.route('/avatar/list', methods=['GET'])
 def get_avatar_list():
     avatar_list = all_avatar()
     return dict(
@@ -43,3 +43,11 @@ def login():
     session.permanent = True
     #
     return redirect(url_for('repo.index'))
+
+
+@main.route("/logout", methods=['GET'])
+@login_required
+def logout():
+    session.pop('user_id')
+    #
+    return redirect(url_for('.index'))

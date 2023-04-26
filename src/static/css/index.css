@@ -9,7 +9,7 @@ body {
     position: relative;
 }
 
-.class-repo-box {
+.class-box {
     background: white;
     padding: 30px;
     border-radius: 30px;
@@ -21,7 +21,7 @@ body {
     margin: auto;
 }
 
-.room-container {
+.class-form-add-repo {
     margin-left: 3px;
 }
 
@@ -29,19 +29,20 @@ body {
     background:  #c4fec5;
 }
 
-.add-room-input {
+.class-input-add-repo {
     display: none;
+    width: 300px;
 }
 
 .input-display {
     display: inline-block;
 }
 
-.msg-container {
+.class-container {
     display: flex;
 }
 
-.msg-room {
+.class-repo-list {
     border: 1px dashed;
     width: 100px;
     height: 750px;
@@ -57,7 +58,7 @@ body {
     font-size: 16px;
 }
 
-.msg-room-name {
+.class-repo-name {
     height: 30px;
     margin: 3px 3px 1px;
     text-align: center;
