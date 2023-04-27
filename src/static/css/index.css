@@ -67,11 +67,11 @@ body {
     border-radius: 5px;
 }
 
-.current-room {
+.current-repo {
     background-color: #e9e4f2;
 }
 
-.msg-body {
+.class-repo-body {
     background: white;
     display: inline-block;
     width: 520px;
@@ -91,11 +91,11 @@ body {
     border-radius: 5px;
 }
 
-.msg-title {
+.class-repo-title {
     margin: 5px;
 }
 
-#id-title {
+#id-repo-title {
     text-align: left;
     margin-left: 10px;
 }

@@ -15,12 +15,16 @@ interface RespRepoList {
 }
 
 interface RespRepoListItem {
-    repo_id: string
+    repo_id: number
     repo_name: string
 }
-
 
 // /repo/add 接口返回
 interface RespRepoAdd extends RespRepoListItem{
     result: boolean
+}
+
+// /repo/add 接口返回
+interface RespRepoDetail extends RespRepoListItem{
+    clone_address: string
 }

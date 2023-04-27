@@ -1,14 +1,3 @@
-class Repo extends GuaObject{
-    repoName: string
-    cloneAddress: string
-
-    constructor(form: {[key: string]: string}) {
-        super()
-        this.repoName = form.repo_name
-        this.cloneAddress = form.clone_address
-    }
-}
-
 class RepoContainer {
     static input: string = 'class-input-add-repo'
     static inputSel: HTMLSelectElement = e(`.${this.input}`)
@@ -35,23 +24,56 @@ class RepoContainer {
 
     static addRepo = (form: apiForm) => {
         let self = this
-        API.call(Method.Post, '/repo/add', form, function(r){
+        let path: string = '/repo/add'
+        // 请求后台创建新仓库
+        API.call(Method.Post, path, form, function(r){
             let response = JSON.parse(r)
             let respRepoAdd: RespRepoAdd = response.data
+            log(`${path} -- 请求后台结果: ${JSON.stringify(respRepoAdd)}`)
+            // 如果创建成功
             if (respRepoAdd.result) {
+                // 增加仓库标签
                 let t: string = self.template(respRepoAdd.repo_id, respRepoAdd.repo_name)
                 let repoListSel: HTMLSelectElement = self.repoListSel
                 appendHtml(repoListSel, t)
+                // 进入仓库
+                self.enterRepo(respRepoAdd.repo_id)
             } else {
+                log("仓库名字已重复")
                 alert("仓库名字已重复")
             }
         })
     }
 
-    static showCloneAddress = (repo: Repo) => {
-        let sel: HTMLSelectElement = e(`.class-clone-address`)
-        sel.className += ' class-display'
-        sel.innerText = repo.cloneAddress
+    static enterRepo = (repoId: number) => {
+        let self = this
+        self.showCurrentRepo(repoId)
+        let path: string = '/repo/detail'
+        let form: apiForm = {
+            "repo_id": repoId,
+        }
+        // 获取仓库信息
+        API.call(Method.Post, path, form, function(r){
+            let response = JSON.parse(r)
+            let respRepoDetail: RespRepoDetail = response.data
+            // log(`${path} -- 请求后台结果: ${JSON.stringify(respRepoDetail)}`)
+            self.showRepoTitle(respRepoDetail.clone_address)
+        })
+    }
+
+    static showRepoTitle = (clone_address: string) => {
+        let sel = e(`#id-repo-title`)
+        sel.innerText = clone_address
+    }
+
+    static showCurrentRepo = (repoId: number) => {
+        let s = `current-repo`
+        let currentRepoSel = e(`.${s}`)
+        if (currentRepoSel !== null) {
+            currentRepoSel.className = 'class-repo-name'
+        }
+        let idRepoSel = e(`#class-repo-id-${repoId.toString()}`)
+        idRepoSel.className += ' ' + s
     }
 
     static showInput = () => {
@@ -82,9 +104,21 @@ class RepoContainer {
 
     static template = (repoId, repoName) => {
         let t = `
-            <div class="class-repo-name repo-id-${repoId}" data-id=${repoId}>${repoName}</div>
+            <div class="class-repo-name" id="class-repo-id-${repoId}" data-id=${repoId}>${repoName}</div>
         `
         return t
+    }
+
+    static clickRepo = () => {
+        let repoListSel = e(`.class-repo-list`)
+        let self = this
+        repoListSel.addEventListener('click', function(event){
+            let target = event.target as HTMLSelectElement
+            if (target.className.includes("class-repo-name")) {
+                let repoId = parseInt(target.dataset.id)
+                self.enterRepo(repoId)
+            }
+        })
     }
 }
 
@@ -92,6 +126,7 @@ class ActionRepo extends Action {
     static eventActions = {
         'click': {
             'showInput': RepoContainer.bindButton,
+            // 'clickRepo': RepoContainer.clickRepo,
         },
     }
 }

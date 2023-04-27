@@ -1,11 +1,13 @@
 import typing as t
+
+from pydantic import Field
 from pydantic.main import BaseModel
 
 
 class RepoListItem(BaseModel):
     """结构"""
-    repo_id: str
-    repo_name: str
+    repo_id: int = Field(default=None)
+    repo_name: str = Field(default=None)
 
 
 class RespRepoList(BaseModel):
@@ -14,3 +16,12 @@ class RespRepoList(BaseModel):
     """
     repo_list: t.List[RepoListItem]
 
+
+class RespRepoAdd(RepoListItem):
+    """结构"""
+    result: bool
+
+
+class RespRepoDetail(RepoListItem):
+    """结构"""
+    clone_address: str

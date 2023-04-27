@@ -10,11 +10,9 @@ def register_routes(a):
     # 注册路由函数
     from api.routes.index import main as index_blueprint
     from api.routes.repo import main as repo_blueprint
-    from api.routes.repos import main as repos_blueprint
 
     a.register_blueprint(index_blueprint, url_prefix='/')
     a.register_blueprint(repo_blueprint, url_prefix='/repo')
-    a.register_blueprint(repos_blueprint, url_prefix='/repos')
 
 
 def register_middleware(a):

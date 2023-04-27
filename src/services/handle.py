@@ -3,54 +3,20 @@ import subprocess
 import typing as t
 from pathlib import Path
 
-from flask import Blueprint, Response, request
-from flask_httpauth import HTTPBasicAuth
+from flask import Response, request
 
-from src.api.routes import subprocessio
-from src.utils import log
-
-main = Blueprint('repos', __name__)
-
-auth = HTTPBasicAuth()
-
-users = {
-    "jane": '123',
-}
+from api.routes import subprocessio
+from utils import log
 
 
-@auth.verify_password
-def verify_password(username, password):
-    log("verify_password", username, password)
-    if username in users and users.get(username) == password:
-        return username
-
-
-@main.route('/<repo_name>/info/refs', methods=['GET'])
-@auth.login_required
-def repos_handle_refs(repo_name: str):
-    service = request.args.get("service")
-    log(f"repos_handle_refs -- repo_name:{repo_name}, service:{service}")
-
-    response = Handle.handle_refs(repo_name=repo_name, service=service)
-    return response
-
-
-@main.route('/<repo_name>/<service>', methods=['POST'])
-def repos_process_pack(repo_name: str, service: str):
-    log(f"repos_process_pack -- repo_name:{repo_name}, service:{service}")
-
-    response = Handle.process_pack(repo_name=repo_name, service=service)
-    return response
-
-
-class Handle:
+class ServiceRepoHandle:
 
     @classmethod
-    def handle_refs(cls, repo_name: str, service: str) -> Response:
+    def handle_refs(cls, user_id: int, repo_name: str, service: str) -> Response:
         # 支持 upload-pack 和 receive-pack 两种操作引用发现的处理
         cls.operation_is_forbidden(service)
 
-        repo_path = cls.validate_repo(repo_name)
+        repo_path = cls.validate_repo(repo_name=repo_name, user_id=user_id)
 
         smart_server_advert = f'# service={service}'
         cmd = f'git {service[4:]} --stateless-rpc --advertise-refs "{repo_path}"'
@@ -70,9 +36,9 @@ class Handle:
         return resp
 
     @classmethod
-    def process_pack(cls, repo_name: str, service: str) -> Response:
+    def process_pack(cls, user_id: int, repo_name: str, service: str) -> Response:
         cls.operation_is_forbidden(service)
-        repo_path = cls.validate_repo(repo_name)
+        repo_path: str = cls.validate_repo(user_id, repo_name)
         #
         cmd = f'git {service[4:]} --stateless-rpc "{repo_path}"'
         content_length = int(request.headers.get('Content-Length'), 0)
@@ -108,9 +74,9 @@ class Handle:
         return resp
 
     @staticmethod
-    def validate_repo(repo_name: str) -> t.Union[Response, str]:
-        project_dir = Path(__file__).parent.parent.parent.parent
-        repos_dir = f'{project_dir}/repos'
+    def validate_repo(user_id: int, repo_name: str) -> t.Union[Response, str]:
+        project_dir = Path(__file__).parent.parent.parent
+        repos_dir = f'{project_dir}/repos/{str(user_id)}'
         repo_path = os.path.realpath(os.path.join(repos_dir, repo_name))
         if not os.path.isdir(repo_path):
             return Response(status=404)

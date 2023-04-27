@@ -1,17 +1,20 @@
-import typing as t
 import json
-import os
+import typing as t
 
 from flask import Blueprint, render_template, request
-from git import Repo
+from flask_httpauth import HTTPBasicAuth
 
-from api.api_model.repo import RepoListItem
+from api.api_model.repo import RepoListItem, RespRepoAdd, RespRepoDetail
 from api.routes import login_required, current_user
 from models.repo import MyRepo
-from src import config
+from models.user import User
+from services.handle import ServiceRepoHandle
+from services.repo import ServiceRepo
 from src.utils import log
 
 main = Blueprint('repo', __name__)
+
+auth = HTTPBasicAuth()
 
 
 @main.route('/', methods=['GET'])
@@ -26,9 +29,9 @@ def index():
 @main.route('/list', methods=['GET'])
 @login_required
 def get_list():
-    user = current_user()
+    user: User = current_user()
     repo_list: t.List[MyRepo] = MyRepo.find_all(user_id=user.id)
-    result = []
+    result: t.List[t.Dict] = []
     for repo in repo_list:
         item = RepoListItem(
             repo_id=repo.id,
@@ -46,38 +49,55 @@ def add():
     form: dict = json.loads(request.get_data(as_text=True))
     log("add form", form)
     repo_name: str = form.get("repo_name")
-    user = current_user()
-    if MyRepo.find_by(user_id=user.id, repo_name=repo_name) is not None:
-        return dict(
-            result=False
-        )
+    user: User = current_user()
 
-    repo_suffix, result = make_repo(repo_name, user.id)
-    log("repo_suffix, result", repo_suffix, result)
-    # 增加建库记录
-    d = dict(
-        repo_name=repo_name,
-        user_id=user.id,
-    )
-    my_repo = MyRepo(d)
-    my_repo.save()
-    return dict(
-        repo_id=my_repo.id,
-        repo_name=repo_name,
-        # clone_address=f"git clone http://localhost:5000/repos/{repo_suffix}",
+    add_result = ServiceRepo.add_repo(user_id=user.id, repo_name=repo_name)
+    result: bool = add_result[0]
+    repo_info: MyRepo = add_result[1]
+    #
+    response = RespRepoAdd(
         result=result,
     )
+    if result:
+        response.repo_id = repo_info.id
+        response.repo_name = repo_info.repo_name
+    return response.dict()
 
 
-def make_repo(repo_name: str, user_id: int) -> (str, bool):
-    repo_name += '.git'
-    path = os.path.join(config.repos_dir + f'/{str(user_id)}/', repo_name)
-    if os.path.exists(path):
-        log(f"仓库:({repo_name})已存在")
-        result = False
-    else:
-        bare_repo = Repo.init(path, bare=True)
-        head = bare_repo.head.ref
-        log(f"仓库:({repo_name}) 创建成功, 当前分支:{head}")
-        result = True
-    return repo_name, result
+@main.route('/detail', methods=['POST'])
+@login_required
+def detail():
+    form: dict = json.loads(request.get_data(as_text=True))
+    log("add form", form)
+    repo_id: int = form.get("repo_id")
+    user: User = current_user()
+
+    repo_detail: RespRepoDetail = ServiceRepo.repo_detail(repo_id=repo_id, user=user)
+    return repo_detail.dict()
+
+
+@auth.verify_password
+def verify_password(username, password):
+    log("verify_password", username, password)
+    user: User = User.find_by(username=username)
+    if user is not None and user.password == user.salted_password(password):
+        return username
+
+
+@main.route('/<username>/<repo_name>/info/refs', methods=['GET'])
+@auth.login_required
+def repos_handle_refs(username: str, repo_name: str):
+    service = request.args.get("service")
+    log(f"repos_handle_refs -- username:{username}, repo_name:{repo_name}, service:{service}")
+    user = User.find_by(username=username)
+    response = ServiceRepoHandle.handle_refs(user_id=user.id, repo_name=repo_name, service=service)
+    return response
+
+
+@main.route('/<username>/<repo_name>/<service>', methods=['POST'])
+def repos_process_pack(username: str, repo_name: str, service: str):
+    log(f"repos_process_pack -- repo_name:{repo_name}, service:{service}")
+    user = User.find_by(username=username)
+
+    response = ServiceRepoHandle.process_pack(user_id=user.id, repo_name=repo_name, service=service)
+    return response
