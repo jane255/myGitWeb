@@ -1,6 +1,7 @@
 import os
 import typing as t
 
+import pygit2
 from git import Repo
 
 import config
@@ -35,25 +36,82 @@ class ServiceRepo:
         my_repo.save()
         return my_repo
 
-    @staticmethod
-    def create_repo(repo_name: str, user_id: int) -> str:
-        repo_name += '.git'
-        path: str = os.path.join(config.repos_dir + f'/{str(user_id)}/', repo_name)
+    @classmethod
+    def create_repo(cls, repo_name: str, user_id: int) -> str:
+        path = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
         bare_repo: Repo = Repo.init(path, bare=True)
         head = bare_repo.head.ref
         log(f"仓库:({repo_name}) 创建成功, 当前分支:{head}")
         return repo_name
 
+    @staticmethod
+    def real_repo_path(repo_name: str, user_id: int) -> str:
+        repo_name += '.git'
+        path: str = os.path.join(config.repos_dir + f'/{str(user_id)}/', repo_name)
+        return path
+
     @classmethod
     def repo_detail(cls, repo_id: int, user: User) -> RespRepoDetail:
         my_repo: MyRepo = MyRepo.find_by(user_id=user.id, id=repo_id)
-        clone_address: str = cls.clone_address_for_name(repo_name=my_repo.repo_name, user_name=user.username)
+        repo_name = my_repo.repo_name
+        clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
+        entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id)
+        log("entries", entries)
         resp = RespRepoDetail(
             repo_id=my_repo.id,
             repo_name=my_repo.repo_name,
             clone_address=clone_address,
+            entries=entries,
         )
         return resp
+
+    @classmethod
+    def repo_entries(cls, repo_name: str, user_id: int, branch_name: str = 'master') -> t.List[t.Dict]:
+        path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+        repo = pygit2.Repository(path)
+        branch = repo.branches.get(branch_name)
+        # 说明是空仓库
+        if branch is None and branch_name == 'master':
+            return []
+
+        commit = branch.peel()
+        tree = commit.tree
+        # 从根目录的 tree 对象开始解析
+        # 递归地解析出所有文件/文件夹
+        es = cls.tree_entries(tree, '')
+        return es
+
+    @classmethod
+    def tree_entries(cls, tree: pygit2.Tree, path: str) -> t.List[t.Dict]:
+        entries = []
+        # Tree 类型可以直接遍历 (库作者实现了 python 的魔法方法)
+        # 所以 Tree 类型也可以看做是一个元素为 pygit2.Blob (文件) 或 pygit2.Tree (子文件夹) 的列表
+        for e in tree:
+            # 文件/文件夹名称
+            n = e.name
+            if path == '':
+                # 根目录
+                p = n
+            else:
+                # 拼接完整路径
+                p = '{}/{}'.format(path, n)
+
+            o = {
+                'name': n,
+                'path': p,
+            }
+            if e.type_str == 'blob':
+                # 如果是文件
+                o['type'] = 'file'
+            elif e.type_str == 'tree':
+                # e 是子文件夹对应的 tree 对象
+                # 获取子文件夹的文件
+                fs = cls.tree_entries(e, p)
+                o['files'] = fs
+                o['type'] = 'dir'
+            entries.append(o)
+        entries = sorted(entries, key=lambda x: x['type'])
+        return entries
 
     @staticmethod
     def clone_address_for_name(repo_name: str, user_name: str) -> str:

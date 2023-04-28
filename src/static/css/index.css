@@ -13,7 +13,7 @@ body {
     background: white;
     padding: 30px;
     border-radius: 30px;
-    width: 750px;
+    width: 1000px;
     position: absolute;
     top: 50px;
     left: 0;
@@ -26,7 +26,7 @@ body {
 }
 
 .class-button-add-repo {
-    background:  #c4fec5;
+    background: #c4fec5;
 }
 
 .class-input-add-repo {
@@ -68,13 +68,13 @@ body {
 }
 
 .current-repo {
-    background-color: #e9e4f2;
+    background-color: #ffc107;
 }
 
 .class-repo-body {
     background: white;
     display: inline-block;
-    width: 520px;
+    width: 700px;
     height: 750px;
     border: 1px dashed;
     margin: 3px;
@@ -98,11 +98,12 @@ body {
 #id-repo-title {
     text-align: left;
     margin-left: 10px;
+    height: 30px;
 }
 
-.msg-list {
-    width: 500px;
-    height: 590px;
+.class-file-list {
+    width: 695px;
+    height: 700px;
     border: 1px dashed;
     overflow: auto;
     background: #eff8ff;
@@ -118,62 +119,62 @@ body {
     width: 500px;
     height: 100px;
     border: 1px dashed;
-    word-break:break-all;
+    word-break: break-all;
     overflow: auto;
     font-size: 15px;
 }
 
-.msg-cell-me-username, .msg-cell-you-username, .msg-cell-notice {
-    font-size: 12px;
-    color: #a0abcb;
-    padding: 5px;
-}
+/*.msg-cell-me-username, .msg-cell-you-username, .msg-cell-notice {*/
+/*    font-size: 12px;*/
+/*    color: #a0abcb;*/
+/*    padding: 5px;*/
+/*}*/
 
-.msg-cell-me, .msg-cell-you {
-    margin: 5px;
-}
+/*.msg-cell-me, .class-file-cell {*/
+/*    margin: 5px;*/
+/*}*/
 
-#msg-cell-me-msg {
+.cell-file {
     background: rgb(237 222 240);
-    text-align-last: start;
 }
 
-#msg-cell-you-msg {
+.cell-folder {
     background: rgb(218 245 253);
 }
 
-.msg-cell-msg {
-    border-width: 1px ;
-    padding: 10px 15px;
-    border-radius: 5px;
-    word-break:break-all;
+/*.msg-cell-msg {*/
+/*    border-width: 1px;*/
+/*    padding: 10px 15px;*/
+/*    border-radius: 5px;*/
+/*    word-break: break-all;*/
+/*    display: inline-block;*/
+/*    max-width: 400px;*/
+/*    font-size: 16px;*/
+/*}*/
+
+/*.msg-cell-me {*/
+/*    text-align: right;*/
+/*}*/
+
+.class-file-cell {
+    margin: 5px;
+    text-align: left;
+    padding: 1px;
+    border-bottom: 1px solid;
+}
+
+.img-file-cell-avatar {
+    width: 25px;
+    height: 25px;
+}
+
+.class-file-cell-avatar {
     display: inline-block;
-    max-width: 400px;
-    font-size: 16px;
 }
 
-.msg-cell-me {
-   text-align: right;
-}
-
-.msg-cell-you {
-   text-align: left;
-}
-
-.msg-cell-avatar-img {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    margin-bottom: 22px;
-}
-
-.msg-cell-avatar {
+.class-file-cell-body {
     display: inline-block;
-
-}
-
-.msg-cell-body {
-    display: inline-block;
+    margin-left: 5px;
 }
 
 .msg-member-avatar, .msg-member-username {

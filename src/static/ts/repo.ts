@@ -56,12 +56,46 @@ class RepoContainer {
         API.call(Method.Post, path, form, function(r){
             let response = JSON.parse(r)
             let respRepoDetail: RespRepoDetail = response.data
-            // log(`${path} -- 请求后台结果: ${JSON.stringify(respRepoDetail)}`)
-            self.showRepoTitle(respRepoDetail.clone_address)
+            log(`${path} -- 请求后台结果: ${JSON.stringify(respRepoDetail.entries)}`)
+            self.parseRepoTitle(respRepoDetail.clone_address)
+            self.parseRepoFile(respRepoDetail.entries)
         })
     }
 
-    static showRepoTitle = (clone_address: string) => {
+    static parseRepoFile = (entries: []) => {
+        let fileListSel = e(`.class-file-list`)
+        fileListSel.replaceChildren()
+        for (let entry of entries) {
+            let e = entry as RespRepoDetailFile | RespRepoDetailDir
+            let t: string
+            if (e.type == EnumFileType.file) {
+                t = `
+                    <div class='class-file-cell cell-file'>
+                        <div class="class-file-cell-avatar">
+                            <img class="img-file-cell-avatar" src="/static/img/icon/file.png">
+                        </div>
+                        <div class="class-file-cell-body">
+                            ${e.name}
+                        </div>
+                    </div>
+                `
+            } else {
+                t = `
+                    <div class='class-file-cell cell-folder'>
+                        <div class="class-file-cell-avatar">
+                            <img class="img-file-cell-avatar" src="/static/img/icon/folder.png">
+                        </div>
+                        <div class="class-file-cell-body">
+                            ${e.name}
+                        </div>
+                    </div>
+                `
+            }
+            appendHtml(fileListSel, t)
+        }
+    }
+
+    static parseRepoTitle = (clone_address: string) => {
         let sel = e(`#id-repo-title`)
         sel.innerText = clone_address
     }

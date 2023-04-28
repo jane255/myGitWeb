@@ -24,7 +24,25 @@ interface RespRepoAdd extends RespRepoListItem{
     result: boolean
 }
 
+enum EnumFileType {
+    file = 'file',
+    dir = 'dir',
+}
+
+
+interface RespRepoDetailFile {
+    name: string
+    path: string
+    type: EnumFileType
+}
+
+
+interface RespRepoDetailDir extends RespRepoDetailFile {
+    files: []
+}
+
 // /repo/add 接口返回
 interface RespRepoDetail extends RespRepoListItem{
     clone_address: string
+    entries: []
 }

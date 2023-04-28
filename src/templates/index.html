@@ -15,22 +15,16 @@
     <div class="class-container">
         <!-- 消息群组-->
         <div class="class-repo-list" data-action="clickRepo">
-{#                {% for room in room_list %}#}
-{#                    {% if room.id == current_room.id %}#}
-{#                    <div class="msg-room-name currnet-repo div-room-{{room.id}}" data-id={{room.id}}>{{room.name}}</div>#}
-{#                    {% else %}#}
-{#                    <div class="msg-room-name div-room-{{room.id}}" data-id={{room.id}}>{{room.name}}</div>#}
-{#                    {% endif %}#}
-{#                {% endfor %}#}
         </div>
 
         <!-- 消息体 -->
 {#        <div class="class-repo-body" data-room_id={{current_room.id}}>#}
         <div class="class-repo-body">
             <div class="class-repo-title">
-                <div id="id-repo-title"></div>
+                <div id="id-repo-title">
+                </div>
             </div>
-{#            <div class="msg-list">#}
+            <div class="class-file-list">
 {#                {% for m in msg_list %}#}
 {#                    {% if m.user_id == current_user.id %}#}
 {#                        <div class="msg-cell-me">#}
