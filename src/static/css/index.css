@@ -111,18 +111,18 @@ body {
     margin: 0 auto 5px;
 }
 
-.msg-input {
-    text-align: center;
-}
+/*.msg-input {*/
+/*    text-align: center;*/
+/*}*/
 
-#id-input {
-    width: 500px;
-    height: 100px;
-    border: 1px dashed;
-    word-break: break-all;
-    overflow: auto;
-    font-size: 15px;
-}
+/*#id-input {*/
+/*    width: 500px;*/
+/*    height: 100px;*/
+/*    border: 1px dashed;*/
+/*    word-break: break-all;*/
+/*    overflow: auto;*/
+/*    font-size: 15px;*/
+/*}*/
 
 /*.msg-cell-me-username, .msg-cell-you-username, .msg-cell-notice {*/
 /*    font-size: 12px;*/
@@ -133,14 +133,6 @@ body {
 /*.msg-cell-me, .class-file-cell {*/
 /*    margin: 5px;*/
 /*}*/
-
-.cell-file {
-    background: rgb(237 222 240);
-}
-
-.cell-folder {
-    background: rgb(218 245 253);
-}
 
 /*.msg-cell-msg {*/
 /*    border-width: 1px;*/
@@ -166,6 +158,9 @@ body {
 .img-file-cell-avatar {
     width: 25px;
     height: 25px;
+    position: relative;
+    top: 4px;
+    left: 3px;
 }
 
 .class-file-cell-avatar {
@@ -175,6 +170,27 @@ body {
 .class-file-cell-body {
     display: inline-block;
     margin-left: 5px;
+    width: 160px;
+    text-align: left;
+}
+
+.cell-file {
+    background: rgb(237 222 240);
+}
+
+.cell-folder {
+    background: rgb(218 245 253);
+}
+
+.class-file-cell-commit {
+    text-align: center;
+    display: inline-block;
+    width: 250px;
+}
+
+.class-file-cell-date {
+    text-align: right;
+    display: inline-block;
 }
 
 .msg-member-avatar, .msg-member-username {

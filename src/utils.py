@@ -32,3 +32,7 @@ def all_avatar():
         'Nintendo_Switch_Kass_Icon.png',
         'Nintendo_Switch_Link_TP_Icon.png',
     ]
+
+
+def timestamp_to_date(t):
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
