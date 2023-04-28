@@ -13,7 +13,7 @@ body {
     background: white;
     padding: 30px;
     border-radius: 30px;
-    width: 1000px;
+    width: 1200px;
     position: absolute;
     top: 50px;
     left: 0;
@@ -74,7 +74,7 @@ body {
 .class-repo-body {
     background: white;
     display: inline-block;
-    width: 700px;
+    width: 900px;
     height: 750px;
     border: 1px dashed;
     margin: 3px;
@@ -102,7 +102,7 @@ body {
 }
 
 .class-file-list {
-    width: 695px;
+    width: 900px;
     height: 700px;
     border: 1px dashed;
     overflow: auto;
@@ -172,6 +172,7 @@ body {
     margin-left: 5px;
     width: 160px;
     text-align: left;
+    color: blue;
 }
 
 .cell-file {
@@ -182,16 +183,37 @@ body {
     background: rgb(218 245 253);
 }
 
-.class-file-cell-commit {
-    text-align: center;
+.class-file-cell-hash {
     display: inline-block;
-    width: 250px;
+    background: darkgray;
+    padding: 2px 6px;
+    border-radius: 5px;
+    color: white;
+}
+
+.class-file-cell-commit {
+    display: inline-block;
+    width: 100px;
+    margin-right: 50px;
 }
 
 .class-file-cell-date {
     text-align: right;
     display: inline-block;
+    margin-left: 150px;
+    color: gray;
 }
+
+
+
+
+
+
+
+
+
+
+
 
 .msg-member-avatar, .msg-member-username {
     display: inline-block;

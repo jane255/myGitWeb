@@ -88,8 +88,10 @@ class ServiceRepo:
                 path=e.get("path"),
                 is_dir=False if e.get("type") == EnumFileType.file else True,
             )
+            hash_code = commit_record.hex[:10]
             commit_time = timestamp_to_date(commit_record.commit_time)
             commit_message = str(commit_record.message).strip()
+            e['hash_code'] = hash_code
             e['commit_time'] = commit_time
             e['commit_message'] = commit_message
         return es

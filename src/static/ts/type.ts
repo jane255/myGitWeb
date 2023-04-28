@@ -34,6 +34,7 @@ interface RespRepoDetailFile {
     name: string
     path: string
     type: EnumFileType
+    hash_code: string
     commit_time: string
     commit_message: string
 }

@@ -74,16 +74,6 @@ class RepoContainer {
                         <div class="class-file-cell-avatar">
                             <img class="img-file-cell-avatar" src="/static/img/icon/file.png">
                         </div>
-                        <div class="class-file-cell-body">
-                            <span class="span-file-cell-body">${e.name}</span>
-                        </div>
-                        <div class="class-file-cell-commit">
-                            <span class="span-file-cell-commit">${e.commit_message }</span>
-                        </div>
-                        <div class="class-file-cell-date">
-                            <span class="span-file-cell-date">${e.commit_time }</span>
-                        </div>
-                    </div>
                 `
             } else {
                 t = `
@@ -91,18 +81,23 @@ class RepoContainer {
                         <div class="class-file-cell-avatar">
                             <img class="img-file-cell-avatar" src="/static/img/icon/folder.png">
                         </div>
-                        <div class="class-file-cell-body">
-                            <span class="span-file-cell-body">${e.name}</span>
-                        </div>
-                        <div class="class-file-cell-commit">
-                            <span class="span-file-cell-commit">${e.commit_message }</span>
-                        </div>
-                        <div class="class-file-cell-date">
-                            <span class="span-file-cell-date">${e.commit_time }</span>
-                        </div>
-                    </div>
                 `
             }
+            t += `
+                    <div class="class-file-cell-body">
+                        <span class="span-file-cell-body">${e.name}</span>
+                    </div>
+                    <div class="class-file-cell-hash">
+                        <span class="span-file-cell-hash">${e.hash_code }</span>
+                    </div>
+                    <div class="class-file-cell-commit">
+                        <span class="span-file-cell-commit">${e.commit_message }</span>
+                    </div>
+                    <div class="class-file-cell-date">
+                        <span class="span-file-cell-date">${e.commit_time }</span>
+                    </div>
+                </div>
+            `
             appendHtml(fileListSel, t)
         }
     }
