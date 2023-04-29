@@ -71,20 +71,24 @@ class RepoContainer {
 
     static enterRepo = (repoId: number, repoName: string) => {
         let self = this
-        self.showCurrentRepo(repoId)
+        self.showCurrentRepo(repoId, repoName)
         // 获取仓库信息
         let username = currentUsername()
         APIContainer.repo(username, repoName, {}, function (r) {
             let response = JSON.parse(r)
             let respRepoDetail: ResponseRepoDetail = response.data
             self.parseRepoTitle(respRepoDetail.clone_address)
-            self.parseRepoFile(respRepoDetail.entries)
+            self.parseRepoDir(respRepoDetail.entries)
         })
     }
 
-    static parseRepoFile = (entries: []) => {
+    static parseRepoFile = (content: string) => {
+        this.clearFileList()
+    }
+
+    static parseRepoDir = (entries: []) => {
+        this.clearFileList()
         let fileListSel = e(`.class-file-list`)
-        fileListSel.replaceChildren()
         for (let entry of entries) {
             let e = entry as ResponseRepoDetailFile | ResponseRepoDetailDir
             let t: string
@@ -105,7 +109,7 @@ class RepoContainer {
             }
             t += `
                     <div class="class-file-cell-body">
-                        <a class="span-file-cell-body" data-path="${e.path}">${e.name}</a>
+                        <a class="span-file-cell-body" data-path="${e.path}" data-type="${e.type}">${e.name}</a>
                     </div>
                     <div class="class-file-cell-hash">
                         <a class="span-file-cell-hash">${e.hash_code }</a>
@@ -122,12 +126,17 @@ class RepoContainer {
         }
     }
 
+    static clearFileList = () => {
+        let fileListSel = e(`.class-file-list`)
+        fileListSel.replaceChildren()
+    }
+
     static parseRepoTitle = (clone_address: string) => {
         let sel = e(`#id-repo-title`)
         sel.innerText = clone_address
     }
 
-    static showCurrentRepo = (repoId: number) => {
+    static showCurrentRepo = (repoId: number, repoName: string) => {
         let s = `current-repo`
         let currentRepoSel = e(`.${s}`)
         if (currentRepoSel !== null) {
@@ -135,6 +144,9 @@ class RepoContainer {
         }
         let idRepoSel = e(`#class-repo-id-${repoId.toString()}`)
         idRepoSel.className += ' ' + s
+        //
+        let body = e(`.class-repo-body`)
+        body.dataset.repo = repoName
     }
 
     static showInput = () => {

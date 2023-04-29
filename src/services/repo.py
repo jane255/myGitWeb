@@ -5,7 +5,7 @@ import pygit2
 from git import Repo
 
 import config
-from api.api_model.index import ResponseRepoDetail, EnumFileType
+from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseContent
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -64,8 +64,45 @@ class ServiceRepo:
         )
         return resp
 
+    # 获取仓库的文件列表
+    # path: 裸仓库路径
+    # branch_name: 分支名称, 例如 master
+
+    #  假设 path 对应的 git 仓库的文件结构如下
+    # .
+    # ├── d
+    # │   └── dind
+    # │       └── a.txt
+    # └── out.txt
+    # 该函数会输出以下内容:
+    # [
+    #    {
+    #       "name":"d",
+    #       "path":"d",
+    #       "files":[
+    #          {
+    #             "name":"dind",
+    #             "path":"d/dind",
+    #             "files":[
+    #                {
+    #                   "name":"a.txt",
+    #                   "path":"d/dind/a.txt",
+    #                   "type":"file"
+    #                }
+    #             ],
+    #             "type":"dir"
+    #          }
+    #       ],
+    #       "type":"dir"
+    #    },
+    #    {
+    #       "name":"out.txt",
+    #       "path":"out.txt",
+    #       "type":"file"
+    #    }
+    # ]
     @classmethod
-    def repo_entries(cls, repo_name: str, user_id: int, branch_name: str = 'master') -> t.List[t.Dict]:
+    def repo_entries(cls, repo_name: str, user_id: int, path: str = '', branch_name: str = 'master') -> t.List[t.Dict]:
         repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
         repo = pygit2.Repository(repo_path)
         branch = repo.branches.get(branch_name)
@@ -75,9 +112,13 @@ class ServiceRepo:
 
         commit = branch.peel()
         tree = commit.tree
-        # 从根目录的 tree 对象开始解析
+        # 从根目录的 tree 对象或者 path 开始解析
         # 递归地解析出所有文件/文件夹
-        es = cls.tree_entries(tree, '')
+        # 可以直接通过文件路径获取文件对应的 blob 对象
+        if len(path) > 0:
+            tree = tree[path]
+
+        es = cls.tree_entries(tree, path)
         # 拿到文件或文件夹的最新提交记录
         for e in es:
             commit_record = cls.entry_latest_commit(
@@ -95,6 +136,50 @@ class ServiceRepo:
             e['commit_message'] = commit_message
         return es
 
+    # 从 pygit2.Tree 类型中解析出文件列表
+    # tree: 文件夹对应的 tree 类型对象
+    # path: 文件夹路径, 输入空字符 '' 解析的是仓库根目录
+    @classmethod
+    def tree_entries(cls, tree: pygit2.Tree, path: str) -> t.List[t.Dict]:
+        entries = []
+        # Tree 类型可以直接遍历 (库作者实现了 python 的魔法方法)
+        # 所以 Tree 类型也可以看做是一个元素为 pygit2.Blob (文件) 或 pygit2.Tree (子文件夹) 的列表
+        for e in tree:
+            # 文件/文件夹名称
+            n = e.name
+            if path == '':
+                # 根目录
+                p = n
+            else:
+                # 拼接完整路径
+                p = '{}/{}'.format(path, n)
+
+            o = {
+                'name': n,
+                'path': p,
+            }
+            if e.type_str == 'blob':
+                # 如果是文件
+                o['type'] = 'file'
+            elif e.type_str == 'tree':
+                # e 是子文件夹对应的 tree 对象
+                # 获取子文件夹的文件
+                fs = cls.tree_entries(e, p)
+                o['files'] = fs
+                o['type'] = 'dir'
+            entries.append(o)
+        entries = sorted(entries, key=lambda x: x['type'])
+        return entries
+
+    # 文件或文件夹的最新提交记录
+    # repo_path: 裸仓库路径
+    # branch_name: 分支名称, 例如 master
+    # path: 该对象在仓库中的路径
+    # is_dir: 该对象是否是文件夹, 默认不是文件夹, 也就是说, 默认是文件
+
+    # 思路是:
+    # 按时间顺序, 从最近的 commit 开始遍历, 检查每个 commit 及其上一个 commit (parent commit) 的差异
+    # 如果差异中包含当前文件, 则表示在这个 commit 中修改了该文件, 那么这个 commit 就是最新的 commit
     @classmethod
     def entry_latest_commit(
             cls,
@@ -157,38 +242,49 @@ class ServiceRepo:
         first = commits[len(commits) - 1]
         return first
 
-    @classmethod
-    def tree_entries(cls, tree: pygit2.Tree, path: str) -> t.List[t.Dict]:
-        entries = []
-        # Tree 类型可以直接遍历 (库作者实现了 python 的魔法方法)
-        # 所以 Tree 类型也可以看做是一个元素为 pygit2.Blob (文件) 或 pygit2.Tree (子文件夹) 的列表
-        for e in tree:
-            # 文件/文件夹名称
-            n = e.name
-            if path == '':
-                # 根目录
-                p = n
-            else:
-                # 拼接完整路径
-                p = '{}/{}'.format(path, n)
-
-            o = {
-                'name': n,
-                'path': p,
-            }
-            if e.type_str == 'blob':
-                # 如果是文件
-                o['type'] = 'file'
-            elif e.type_str == 'tree':
-                # e 是子文件夹对应的 tree 对象
-                # 获取子文件夹的文件
-                fs = cls.tree_entries(e, p)
-                o['files'] = fs
-                o['type'] = 'dir'
-            entries.append(o)
-        entries = sorted(entries, key=lambda x: x['type'])
-        return entries
-
     @staticmethod
     def clone_address_for_name(repo_name: str, user_name: str) -> str:
         return f"http://localhost:5000/{user_name}/{repo_name}.git"
+
+    @classmethod
+    def repo_suffix(cls, repo_name: str, user: User, suffix: str, suffix_type: EnumFileType) -> ResponseContent:
+        if suffix_type == EnumFileType.file.value:
+            content: str = cls.file_content(repo_name=repo_name, user_id=user.id, path=suffix)
+            log("content", content)
+            resp = ResponseContent(
+                content=content,
+            )
+            return resp
+        else:
+            entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, path=suffix)
+            log("entries", entries)
+            resp = ResponseContent(
+                entries=entries,
+            )
+            return resp
+
+    # 获取文件内容
+    # repo_path: 裸仓库路径
+    # branch_name: 分支名称, 例如 master
+    # path: 该文件在仓库中的路径
+    @classmethod
+    def file_content(cls, repo_name: str, user_id: int, path: str, branch_name: str = 'master') -> str:
+        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+        # 通过裸仓库路径生成 Repository 对象
+        repo = pygit2.Repository(repo_path)
+        # 通过分支名生成 pygit2.Branch 对象, pygit2.Branch 对应在 git 中的概念是分支
+        branch = repo.branches[branch_name]
+        # 获取该分支的最新 commit
+        commit = branch.peel()
+        # commit.tree 对应仓库的根目录
+        # 现在你相当于得到了这个分支最近一次提交时的目录
+        tree = commit.tree
+        # tree 可以看做是 key 为 路径, value 为 pygit2.Blob (文件) 或 pygit2.Tree (子文件夹) 的字典
+        # 可以直接通过文件路径获取文件对应的 blob 对象
+        entry = tree[path]
+        # tree[path] 可能返回 pygit2.Blob (文件) 类型, 也可能返回 pygit2.Tree 类型, 取决于传入的路径
+        assert isinstance(entry, pygit2.Blob)
+        # entry.data 是文件对应的二进制
+        # 假设现在只处理文本文件, 转成 utf-8 文本转回
+        data = entry.data.decode('utf-8')
+        return data

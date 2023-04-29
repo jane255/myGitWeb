@@ -5,7 +5,7 @@ from flask import (
 )
 from flask_httpauth import HTTPBasicAuth
 
-from api.api_model.index import ResponseRepoDetail
+from api.api_model.index import ResponseRepoDetail, ResponseContent
 from api.routes import login_required, current_user, get_request_json
 from models.user import User
 from services.handle import ServiceRepoHandle
@@ -84,7 +84,7 @@ def repos_handle_refs(username: str, repo_name: str):
     return response
 
 
-@main.route('/<username>/<repo_name>/<service>', methods=['POST'])
+# @main.route('/<username>/<repo_name>/<service>', methods=['POST'])
 def repos_process_pack(username: str, repo_name: str, service: str):
     log(f"repos_process_pack -- repo_name:{repo_name}, service:{service}")
     user = User.find_by(username=username)
@@ -95,7 +95,22 @@ def repos_process_pack(username: str, repo_name: str, service: str):
 
 @main.route('/<username>/<repo_name>', methods=['GET'])
 @login_required
-def detail(username: str, repo_name: str):
+def repo(username: str, repo_name: str):
     user = current_user()
     repo_detail: ResponseRepoDetail = ServiceRepo.repo_detail(repo_name=repo_name, user=user)
+    return repo_detail.dict()
+
+
+@main.route('/<username>/<repo_name>/<path:suffix>', methods=['POST'])
+@login_required
+def repo_suffix(username: str, repo_name: str, suffix):
+    if suffix in ['git-upload-pack', 'git-receive-pack']:
+        return repos_process_pack(username, repo_name, suffix)
+
+    form = get_request_json()
+    suffix_type = form.get('type')
+    log("suffix_type", suffix_type)
+    user = current_user()
+    repo_detail: ResponseContent = ServiceRepo.repo_suffix(
+        repo_name=repo_name, user=user, suffix=suffix, suffix_type=suffix_type)
     return repo_detail.dict()

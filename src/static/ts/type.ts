@@ -59,3 +59,14 @@ interface RequestLogin {
 interface ResponseLogin {
     result: boolean
 }
+
+// repo/** api request param
+interface RequestRepoSuffix {
+    type: string
+}
+
+// repo/** api responser param
+interface ResponserRepoSuffix {
+    content: string
+    entries: []
+}

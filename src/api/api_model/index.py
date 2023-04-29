@@ -56,5 +56,11 @@ class ResponseRepoDetailDir(ResponseRepoDetailFile):
 
 class ResponseRepoDetail(RepoListItem):
     """结构"""
-    clone_address: str
+    clone_address: str = Field(default=None)
     entries: t.List
+
+
+class ResponseContent(BaseModel):
+    """结构"""
+    content: str = Field(default=None)
+    entries: t.List = Field(default=None)

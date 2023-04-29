@@ -36,3 +36,5 @@ class GuaObject {
 }
 
 const currentUsername = () : string => e(`.class-box`).dataset.username
+
+const currentRepoName = () : string => e(`.class-repo-body`).dataset.repo
