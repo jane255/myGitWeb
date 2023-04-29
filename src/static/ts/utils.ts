@@ -34,3 +34,5 @@ class GuaObject {
         return new this(...args)
     }
 }
+
+const currentUsername = () : string => e(`.class-box`).dataset.username

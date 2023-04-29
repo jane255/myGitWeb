@@ -5,7 +5,7 @@ import pygit2
 from git import Repo
 
 import config
-from api.api_model.repo import RespRepoDetail, EnumFileType
+from api.api_model.index import ResponseRepoDetail, EnumFileType
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -51,13 +51,12 @@ class ServiceRepo:
         return path
 
     @classmethod
-    def repo_detail(cls, repo_id: int, user: User) -> RespRepoDetail:
-        my_repo: MyRepo = MyRepo.find_by(user_id=user.id, id=repo_id)
-        repo_name = my_repo.repo_name
+    def repo_detail(cls, repo_name: str, user: User) -> ResponseRepoDetail:
+        my_repo = MyRepo.find_by(repo_name=repo_name)
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id)
         log("entries", entries)
-        resp = RespRepoDetail(
+        resp = ResponseRepoDetail(
             repo_id=my_repo.id,
             repo_name=my_repo.repo_name,
             clone_address=clone_address,
@@ -192,4 +191,4 @@ class ServiceRepo:
 
     @staticmethod
     def clone_address_for_name(repo_name: str, user_name: str) -> str:
-        return f"git clone http://localhost:5000/repo/{user_name}/{repo_name}.git"
+        return f"http://localhost:5000/{user_name}/{repo_name}.git"

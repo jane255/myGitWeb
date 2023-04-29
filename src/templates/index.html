@@ -7,59 +7,20 @@
 
 </head>
 <body>
-<div class="class-box">
+<div class="class-box" data-username="">
     <div class="class-form-add-repo">
         <button type="submit" class="class-button-add-repo" data-action="showInput">创建新仓库</button>
         <input class="class-input-add-repo" type="text" placeholder="请输入新仓库名，不能用中文哦">
     </div>
     <div class="class-container">
-        <!-- 消息群组-->
-        <div class="class-repo-list" data-action="clickRepo">
-        </div>
 
-        <!-- 消息体 -->
-{#        <div class="class-repo-body" data-room_id={{current_room.id}}>#}
+        <div class="class-repo-list" data-action="clickRepo"></div>
+
         <div class="class-repo-body">
             <div class="class-repo-title">
-                <div id="id-repo-title">
-                </div>
+                <div id="id-repo-title"></div>
             </div>
-            <div class="class-file-list">
-{#                {% for m in msg_list %}#}
-{#                    {% if m.user_id == current_user.id %}#}
-{#                        <div class="msg-cell-me">#}
-{#                            <div class="msg-cell-body">#}
-{#                                <div class="msg-cell-me-username">#}
-{#                                    {{m.username}}#}
-{#                                </div>#}
-{#                                <div id="msg-cell-me-msg" class='msg-cell-msg' data-msg_id={{m.id}}>#}
-{#                                    {{m.msg}}#}
-{#                                </div>#}
-{#                            </div>#}
-{#                            <div class="msg-cell-avatar">#}
-{#                                <img class="msg-cell-avatar-img" src="/static/img/avatar/{{m.avatar}}">#}
-{#                            </div>#}
-{#                        </div>#}
-{#                    {% else %}#}
-{#                        <div class="msg-cell-you">#}
-{#                            <div class="msg-cell-avatar">#}
-{#                                <img class="msg-cell-avatar-img" src="/static/img/avatar/{{m.avatar}}">#}
-{#                            </div>#}
-{#                            <div class="msg-cell-body">#}
-{#                                <div class="msg-cell-you-username">#}
-{#                                    {{m.username}}#}
-{#                                </div>#}
-{#                                <div id="msg-cell-you-msg" class='msg-cell-msg' data-msg_id={{m.id}}>#}
-{#                                    {{m.msg}}#}
-{#                                </div>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                    {% endif %}#}
-{#                {% endfor %}#}
-{#            </div>#}
-{#            <div class="msg-input">#}
-{#                <textarea id="id-input" placeholder="输入消息 按回车发送" data-action="msg-send"></textarea>#}
-{#            </div>#}
+            <div class="class-file-list"></div>
         </div>
 
         <!-- 消息成员 -->
@@ -86,6 +47,7 @@
 <script type="text/javascript" charset="utf-8"  src="../static/compileJs/action.js"></script>
 <!-- 业务逻辑 -->
 <script type="text/javascript" charset="utf-8"  src="../static/compileJs/repo.js"></script>
+<script type="text/javascript" charset="utf-8"  src="../static/compileJs/file.js"></script>
 <script type="text/javascript" charset="utf-8" src="../static/compileJs/main.js"></script>
 </body>
 </html>

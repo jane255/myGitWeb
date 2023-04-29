@@ -1,6 +1,8 @@
+import json
+import typing as t
 import functools
 
-from flask import session, render_template
+from flask import session, render_template, request
 from pydantic import BaseModel
 
 from src.models.user import User
@@ -33,3 +35,7 @@ def login_required(f):
             return f(*args, **kwargs)
 
     return wrapped
+
+
+def get_request_json() -> t.Dict:
+    return json.loads(request.get_data(as_text=True))

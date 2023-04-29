@@ -5,20 +5,31 @@ from pydantic import Field
 from pydantic.main import BaseModel
 
 
+class RequestLogin(BaseModel):
+    username: str
+    password: str
+
+
+class ResponseLogin(BaseModel):
+    result: bool
+    user_id: int
+    username: str
+
+
 class RepoListItem(BaseModel):
     """结构"""
     repo_id: int = Field(default=None)
     repo_name: str = Field(default=None)
 
 
-class RespRepoList(BaseModel):
+class ResponseRepoList(BaseModel):
     """
     接口响应-仓库列表
     """
     repo_list: t.List[RepoListItem]
 
 
-class RespRepoAdd(RepoListItem):
+class ResponseRepoAdd(RepoListItem):
     """结构"""
     result: bool
 
@@ -33,17 +44,17 @@ class EnumFileType(Enum):
     dir = 'dir'
 
 
-class RespRepoDetailFile(BaseModel):
+class ResponseRepoDetailFile(BaseModel):
     name: str
     path: str
     type: EnumFileType
 
 
-class RespRepoDetailDir(RespRepoDetailFile):
+class ResponseRepoDetailDir(ResponseRepoDetailFile):
     files: t.List
 
 
-class RespRepoDetail(RepoListItem):
+class ResponseRepoDetail(RepoListItem):
     """结构"""
     clone_address: str
     entries: t.List

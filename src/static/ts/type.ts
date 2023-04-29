@@ -10,17 +10,17 @@ interface apiForm {
 }
 
 // /repo/list 接口返回
-interface RespRepoList {
-    repo_list: RespRepoListItem[]
+interface ResponseRepoList {
+    repo_list: ResponseRepoListItem[]
 }
 
-interface RespRepoListItem {
+interface ResponseRepoListItem {
     repo_id: number
     repo_name: string
 }
 
 // /repo/add 接口返回
-interface RespRepoAdd extends RespRepoListItem{
+interface ResponseRepoAdd extends ResponseRepoListItem{
     result: boolean
 }
 
@@ -30,7 +30,7 @@ enum EnumFileType {
 }
 
 
-interface RespRepoDetailFile {
+interface ResponseRepoDetailFile {
     name: string
     path: string
     type: EnumFileType
@@ -40,12 +40,22 @@ interface RespRepoDetailFile {
 }
 
 
-interface RespRepoDetailDir extends RespRepoDetailFile {
+interface ResponseRepoDetailDir extends ResponseRepoDetailFile {
     files: []
 }
 
 // /repo/add 接口返回
-interface RespRepoDetail extends RespRepoListItem{
+interface ResponseRepoDetail extends ResponseRepoListItem{
     clone_address: string
     entries: []
+}
+
+// login api request param
+interface RequestLogin {
+    username: string
+    password: string
+}
+
+interface ResponseLogin {
+    result: boolean
 }
