@@ -74,6 +74,7 @@ def verify_password(username, password):
         return username
 
 
+# git clone fetch 的请求函数
 @main.route('/<username>/<repo_name>/info/refs', methods=['GET'])
 @auth.login_required
 def repos_handle_refs(username: str, repo_name: str):
@@ -84,8 +85,11 @@ def repos_handle_refs(username: str, repo_name: str):
     return response
 
 
-# @main.route('/<username>/<repo_name>/<service>', methods=['POST'])
-def repos_process_pack(username: str, repo_name: str, service: str):
+# git pull 的请求函数
+@main.route('/<username>/<repo_name>/git-upload-pack', methods=['POST'])
+@auth.login_required
+def repos_process_pack_upload(username: str, repo_name: str):
+    service = 'git-upload-pack'
     log(f"repos_process_pack -- repo_name:{repo_name}, service:{service}")
     user = User.find_by(username=username)
 
@@ -93,6 +97,19 @@ def repos_process_pack(username: str, repo_name: str, service: str):
     return response
 
 
+# git push
+@main.route('/<username>/<repo_name>/git-receive-pack', methods=['POST'])
+@auth.login_required
+def repos_process_pack_receive(username: str, repo_name: str):
+    service = 'git-receive-pack'
+    log(f"repos_process_pack -- repo_name:{repo_name}, service:{service}")
+    user = User.find_by(username=username)
+
+    response = ServiceRepoHandle.process_pack(user_id=user.id, repo_name=repo_name, service=service)
+    return response
+
+
+# 仓库
 @main.route('/<username>/<repo_name>', methods=['GET'])
 @login_required
 def repo(username: str, repo_name: str):
@@ -101,12 +118,10 @@ def repo(username: str, repo_name: str):
     return repo_detail.dict()
 
 
+# 仓库嵌套文件夹
 @main.route('/<username>/<repo_name>/<path:suffix>', methods=['POST'])
 @login_required
 def repo_suffix(username: str, repo_name: str, suffix):
-    if suffix in ['git-upload-pack', 'git-receive-pack']:
-        return repos_process_pack(username, repo_name, suffix)
-
     form = get_request_json()
     suffix_type = form.get('type')
     log("suffix_type", suffix_type)
