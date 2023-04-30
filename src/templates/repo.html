@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head data-suburl="">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="shortcut icon" href="/static/img/icon/favicon.png">
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/css/octicons.min.css">
+
+    <link rel="stylesheet" href="/static/css/semantic-2.4.2.min.css">
+    <link rel="stylesheet" href="/static/css/gogs.min.css?v=c53b7e9698524da9a2c80ab2c129ca4e623a25e9">
+
+    <title>Haxi-Gogs</title>
+
+    <meta name="theme-color" content="#ff5343">
+</head>
+<body>
+<div class="full height">
+    <noscript>This website works better with JavaScript</noscript>
+
+    <div class="following bar light">
+        <div class="ui container">
+            <div class="ui grid">
+                <div class="column">
+                    <div class="ui top secondary menu">
+                        <a class="item brand" href="/">
+                            <img class="ui mini image" src="/static/img/icon/favicon.png">
+                        </a>
+
+
+                        <a class="item" href="/">Dashboard</a>
+                        <a class="item" href="/issues">Issues</a>
+                        <a class="item" href="/pulls">Pull Requests</a>
+
+
+                        <a class="item" href="/explore/repos">Explore</a>
+
+
+                        <div class="right menu">
+                            <div class="ui dropdown head link jump item poping up" data-content="Create..."
+                                 data-variation="tiny inverted" tabindex="0">
+											<span class="text">
+												<i class="octicon octicon-plus"><span
+                                                        class="sr-only">Create...</span></i>
+												<i class="octicon octicon-triangle-down"></i>
+											</span>
+                                <div class="menu" tabindex="-1">
+                                    <a class="item" href="/repo/create">
+                                        <i class="octicon octicon-plus"></i> New Repository
+                                    </a>
+                                    <a class="item" href="/repo/migrate">
+                                        <i class="octicon octicon-repo-clone"></i> New Migration
+                                    </a>
+
+                                    <a class="item" href="/org/create">
+                                        <i class="octicon octicon-organization"></i> New Organization
+                                    </a>
+
+                                </div>
+                            </div>
+
+                            <div class="ui dropdown head link jump item poping up" data-content="User profile and more"
+                                 data-variation="tiny inverted" tabindex="0">
+											<span class="text avatar">
+												<img class="ui small rounded image"
+                                                     src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
+												<span class="sr-only">User profile and more</span>
+												<i class="octicon octicon-triangle-down" tabindex="-1"></i>
+											</span>
+                                <div class="menu" tabindex="-1">
+                                    <div class="ui header">
+                                        Signed in as <strong>haxi</strong>
+                                    </div>
+
+                                    <div class="divider"></div>
+                                    <a class="item" href="/haxi">
+                                        <i class="octicon octicon-person"></i> Your Profile
+                                    </a>
+                                    <a class=" item" href="/user/settings">
+                                        <i class="octicon octicon-settings"></i> Your Settings
+                                    </a>
+                                    <a class="item" target="_blank" rel="noopener noreferrer"
+                                       href="https://gogs.io/docs">
+                                        <i class="octicon octicon-question"></i> Help
+                                    </a>
+
+
+                                    <div class="divider"></div>
+
+                                    <form id="logout-form" class="item" action="/user/logout" method="POST">
+                                        <input type="hidden" name="_csrf"
+                                               value="ony1gwrwypwAO8uIRRvJ9M_qymw6MTY4MjgzMTg4NjU2OTQyNTY1NQ">
+                                        <div class="submit-button" data-form="#logout-form">
+                                            <i class="octicon octicon-sign-out"></i> Sign Out
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="repository file list">
+        <div class="header-wrapper">
+            <div class="ui container">
+                <div class="ui vertically padded grid head">
+                    <div class="column">
+                        <div class="ui header">
+                            <div class="ui huge breadcrumb class-header-breadcrumb">
+                            </div>
+
+                            <div class="ui right">
+                                <form class="display inline"
+                                      action="/haxi/gitWeb/action/unwatch?redirect_to=%2fhaxi%2fgitWeb" method="POST">
+                                    <input type="hidden" name="_csrf"
+                                           value="ony1gwrwypwAO8uIRRvJ9M_qymw6MTY4MjgzMTg4NjU2OTQyNTY1NQ">
+                                    <div class="ui labeled button" tabindex="0">
+                                        <button class="ui basic button">
+                                            <i class="eye icon"></i>Unwatch
+                                        </button>
+                                        <a class="ui basic label" href="/haxi/gitWeb/watchers">
+                                            1
+                                        </a>
+                                    </div>
+                                </form>
+                                <form class="display inline"
+                                      action="/haxi/gitWeb/action/star?redirect_to=%2fhaxi%2fgitWeb" method="POST">
+                                    <input type="hidden" name="_csrf"
+                                           value="ony1gwrwypwAO8uIRRvJ9M_qymw6MTY4MjgzMTg4NjU2OTQyNTY1NQ">
+                                    <div class="ui labeled button" tabindex="0">
+                                        <button class="ui basic button">
+                                            <i class="star outline icon"></i>Star
+                                        </button>
+                                        <a class="ui basic label" href="/haxi/gitWeb/stars">
+                                            0
+                                        </a>
+                                    </div>
+                                </form>
+
+                                <div class="ui labeled button" tabindex="0">
+                                    <a class="ui basic button poping up" href="/repo/fork/48798">
+                                        <i class="octicon octicon-repo-forked"></i>Fork
+                                    </a>
+                                    <a class="ui basic label" href="/haxi/gitWeb/forks">
+                                        0
+                                    </a>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui tabs container">
+                <div class="ui tabular menu navbar">
+
+                    <a class="active item" href="/haxi/gitWeb">
+                        <i class="octicon octicon-file-text"></i> Files
+                    </a>
+
+
+                    <a class=" item" href="/haxi/gitWeb/issues">
+                        <i class="octicon octicon-issue-opened"></i> Issues <span class="ui gray small label">0</span>
+                    </a>
+
+
+                    <a class=" item" href="/haxi/gitWeb/pulls">
+                        <i class="octicon octicon-git-pull-request"></i> Pull Requests <span
+                            class="ui gray small label">0</span>
+                    </a>
+
+
+                    <a class=" item" href="/haxi/gitWeb/wiki">
+                        <i class="octicon octicon-book"></i> Wiki
+                    </a>
+
+
+                    <div class="right menu">
+                        <a class=" item" href="/haxi/gitWeb/settings">
+                            <i class="octicon octicon-tools"></i> Settings
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+            <div class="ui tabs divider"></div>
+
+        </div>
+
+        <div class="ui container">
+
+            <p id="repo-desc">
+                <span class="no-description text-italic">No Description</span>
+                <a class="link" href=""></a>
+            </p>
+            <div class="ui segment" id="git-stats">
+                <div class="ui two horizontal center link list">
+                    <div class="item">
+                        <a href="/haxi/gitWeb/commits/master"><span class="ui text black"><i
+                                class="octicon octicon-history"></i> <b>0</b> Commits</span> </a>
+                    </div>
+                    <div class="item">
+                        <a href="/haxi/gitWeb/branches"><span class="ui text black"><i
+                                class="octicon octicon-git-branch"></i><b>1</b> Branches</span> </a>
+                    </div>
+                    <div class="item">
+                        <a href="/haxi/gitWeb/releases"><span class="ui text black"><i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui secondary menu">
+
+                <div class="fitted item">
+                    <a href="/haxi/gitWeb/compare/master...master">
+                        <button class="ui green small button"><i class="octicon octicon-git-compare"></i></button>
+                    </a>
+                </div>
+
+                <div class="fitted item choose reference">
+                    <div class="ui floating filter dropdown" data-no-results="No results found." tabindex="0">
+                        <div class="ui basic small button">
+			<span class="text">
+				<i class="octicon octicon-git-branch"></i>
+				Branch:
+				<strong>master</strong>
+			</span>
+                            <i class="dropdown icon" tabindex="0">
+                                <div class="menu" tabindex="-1"></div>
+                            </i>
+                        </div>
+                        <div class="menu" tabindex="-1">
+                            <div class="ui icon search input">
+                                <i class="filter icon"></i>
+                                <input name="search" placeholder="Filter branch or tag...">
+                            </div>
+                            <div class="header">
+                                <div class="ui grid">
+                                    <div class="two column row">
+                                        <a class="reference column" href="#" data-target="#branch-list">
+							<span class="text black">
+								Branches
+							</span>
+                                        </a>
+                                        <a class="reference column" href="#" data-target="#tag-list">
+							<span class="text ">
+								Tags
+							</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="branch-list" class="scrolling menu">
+
+                                <div class="item selected" data-url="/haxi/gitWeb/src/master">master</div>
+
+                            </div>
+                            <div id="tag-list" class="scrolling menu" style="display: none">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fitted item">
+                    <div class="ui breadcrumb class-ui-breadcrumb">
+                    </div>
+                </div>
+                <div class="right fitted item">
+                    <div id="file-buttons" class="ui tiny blue buttons">
+                        <a href="/haxi/gitWeb/_new/master/" class="ui button">
+                            New file
+                        </a>
+
+
+                        <a href="/haxi/gitWeb/_upload/master/" class="ui button">
+                            Upload file
+                        </a>
+
+                    </div>
+
+
+                    <div class="ui action small input" id="clone-panel">
+
+                        <button class="ui basic clone button blue" id="repo-clone-https"
+                                data-link="">
+                            HTTPS
+                        </button>
+
+{#                        <button class="ui basic clone button" id="repo-clone-ssh"#}
+{#                                data-link="git@try.gogs.io:haxi/gitWeb.git">#}
+{#                            SSH#}
+{#                        </button>#}
+
+                        <input id="repo-clone-url" value="" readonly="">
+                        <button class="ui basic icon button poping up clipboard" id="clipboard-btn" data-original="Copy"
+                                data-success="Copied!" data-error="Press ⌘-C or Ctrl-C to copy" data-content="Copy"
+                                data-variation="inverted tiny" data-clipboard-target="#repo-clone-url">
+                            <i class="octicon octicon-clippy"></i>
+                        </button>
+                        <div class="ui basic jump dropdown icon button" tabindex="0">
+                            <i class="download icon"></i>
+                            <div class="menu" tabindex="-1">
+                                <a class="item" href="/haxi/gitWeb/archive/master.zip"><i
+                                        class="octicon octicon-file-zip"></i> ZIP</a>
+                                <a class="item" href="/haxi/gitWeb/archive/master.tar.gz"><i
+                                        class="octicon octicon-file-zip"></i> TAR.GZ</a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <table id="repo-files-table" class="ui unstackable fixed single line table">
+                <thead>
+                <tr>
+                    <th class="four wide">
+
+                        <img class="ui avatar image img-12"
+                             src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
+                        <a href="/haxi"><strong>haxi</strong></a>
+
+                        <a rel="nofollow" class="ui sha label"
+                           href="/haxi/gitWeb/commit/b780a75d2d62d8473df9b0968238e4454245fea1">b780a75d2d</a>
+                        <span class="grey has-emoji">Add 'test1.txt'</span>
+                    </th>
+                    <th class="nine wide">
+                    </th>
+                    <th class="three wide text grey right age"><span class="time-since poping up" title=""
+                                                                     data-content="Sun, 30 Apr 2023 08:03:29 UTC"
+                                                                     data-variation="inverted tiny">6 hours ago</span>
+                    </th>
+                </tr>
+                </thead>
+                <tbody class="class-files-tboody">
+                </tbody>
+            </table>
+
+            <div id="file-content" class="tab-size-8">
+                <h4 class="ui top attached header" id="repo-readme">
+
+                    <i class="octicon octicon-book"></i>
+
+                    <strong>README.md</strong>
+
+
+                </h4>
+                <div class="ui unstackable attached table segment">
+                    <div id="" class="file-view markdown has-emoji">
+
+                        <div id="gitweb" class="anchor-wrap"><h1>gitWeb<a class="anchor" href="#gitweb"><span
+                                class="octicon octicon-link"></span></a></h1></div>
+
+
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function submitDeleteForm() {
+                    var message = prompt("delete_confirm_message\n\ndelete_commit_summary", "Delete ''");
+                    if (message != null) {
+                        $("#delete-message").val(message);
+                        $("#delete-file-form").submit()
+                    }
+                }
+            </script>
+
+
+        </div>
+    </div>
+
+</div>
+
+<!-- 工具 -->
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/utils.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/type.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/api.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/action.js"></script>
+<!-- 业务逻辑 -->
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/repo.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/file.js"></script>
+<script>
+    RepoContainer.initRepoDetail()
+</script>
+</body>
+</html>

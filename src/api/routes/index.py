@@ -113,9 +113,16 @@ def repos_process_pack_receive(username: str, repo_name: str):
 @main.route('/<username>/<repo_name>', methods=['GET'])
 @login_required
 def repo(username: str, repo_name: str):
+    return render_template('repo.html')
+
+
+# 仓库
+@main.route('/<username>/<repo_name>/detail', methods=['GET'])
+@login_required
+def repo_detail(username: str, repo_name: str):
     user = current_user()
-    repo_detail: ResponseRepoDetail = ServiceRepo.repo_detail(repo_name=repo_name, user=user)
-    return repo_detail.dict()
+    response: ResponseRepoDetail = ServiceRepo.repo_detail(repo_name=repo_name, user=user)
+    return response.dict()
 
 
 # 仓库嵌套文件夹

@@ -22,7 +22,7 @@ class FileContainer {
                     if (type === EnumFileType.dir) {
                         RepoContainer.parseRepoDir(res.entries)
                     } else {
-                        RepoContainer.parseRepoFile(res.content)
+                        RepoContainer.parseRepoFile(path, res.content)
                     }
                 })
             }

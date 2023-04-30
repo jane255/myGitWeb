@@ -1,68 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>GitWeb</title>
-    <link rel="stylesheet" href="../static/css/index.css">
-
+<head data-suburl="">
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/css/octicons.min.css">
+    <link rel="stylesheet" href="/static/css/semantic-2.4.2.min.css">
+    <link rel="stylesheet" href="/static/css/gogs.min.css?v=c53b7e9698524da9a2c80ab2c129ca4e623a25e9">
+    <title>Haxi-Gogs</title>
 </head>
 <body>
-<div class="class-box" data-username="">
-    <div class="class-form-add-repo">
-        <button type="submit" class="class-button-add-repo" data-action="showInput">创建新仓库</button>
-        <input class="class-input-add-repo" type="text" placeholder="请输入新仓库名，不能用中文哦">
-    </div>
-    <div class="class-container">
+<div class="full height">
+    <noscript>This website works better with JavaScript</noscript>
+    <div class="following bar light">
+        <div class="ui container">
+            <div class="ui grid">
+                <div class="column">
+                    <div class="ui top secondary menu">
+                        <a class="item brand" href="/">
+                            <img class="ui mini image" src="/static/img/icon/favicon.png">
+                        </a>
 
-        <div class="class-repo-list" data-action="clickRepo"></div>
+                        <a class="item" href="/">Dashboard</a>
+                        <a class="item" href="/">Issues</a>
+                        <a class="item" href="/">Pull Requests</a>
+                        <a class="item" href="/">Explore</a>
 
-        <div class="class-repo-body" data-repo="">
-            <div class="class-repo-menu">
-                <div class="class-item-clone"></div>
+                        <div class="right menu">
+                            <div class="ui dropdown head link jump item poping up" data-content="Create..."
+                                 data-variation="tiny inverted" tabindex="0">
+                                            <span class="text">
+                                                <i class="octicon octicon-plus"><span
+                                                        class="sr-only">Create...</span></i>
+                                                <i class="octicon octicon-triangle-down"></i>
+                                            </span>
+                                <div class="menu" tabindex="-1">
+                                    <a class="item" href="/repo/create">
+                                        <i class="octicon octicon-plus"></i> New Repository
+                                    </a>
+                                    <a class="item" href="/repo/migrate">
+                                        <i class="octicon octicon-repo-clone"></i> New Migration
+                                    </a>
+
+                                    <a class="item" href="/org/create">
+                                        <i class="octicon octicon-organization"></i> New Organization
+                                    </a>
+
+                                </div>
+                            </div>
+
+                            <div class="ui dropdown head link jump item poping up" data-content="User profile and more"
+                                 data-variation="tiny inverted" tabindex="0">
+                                            <span class="text avatar">
+                                                <img class="ui small rounded image"
+                                                     src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
+                                                <span class="sr-only">User profile and more</span>
+                                                <i class="octicon octicon-triangle-down" tabindex="-1"></i>
+                                            </span>
+                                <div class="menu" tabindex="-1">
+                                    <div class="ui header">
+                                        Signed in as <strong>haxi</strong>
+                                    </div>
+
+                                    <div class="divider"></div>
+                                    <a class="item" href="/haxi">
+                                        <i class="octicon octicon-person"></i> Your Profile
+                                    </a>
+                                    <a class=" item" href="/user/settings">
+                                        <i class="octicon octicon-settings"></i> Your Settings
+                                    </a>
+                                    <a class="item" target="_blank" rel="noopener noreferrer"
+                                       href="https://gogs.io/docs">
+                                        <i class="octicon octicon-question"></i> Help
+                                    </a>
+
+                                    <div class="divider"></div>
+
+                                    <form id="logout-form" class="item" action="/user/logout" method="POST">
+                                        <input type="hidden" name="_csrf"
+                                               value="ony1gwrwypwAO8uIRRvJ9M_qymw6MTY4MjgzMTg4NjU2OTQyNTY1NQ">
+                                        <div class="submit-button" data-form="#logout-form">
+                                            <i class="octicon octicon-sign-out"></i> Sign Out
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
             </div>
-            <table class="class-files-table">
-                <thead class="class-files-head"></thead>
-{#                    <tr>#}
-{#                    <th class="four wide">#}
-{#                    <img class="ui avatar image img-12" src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">#}
-{#                    <a href="/haxi"><strong>haxi</strong></a>#}
-{#                    <a rel="nofollow" class="ui sha label" href="/haxi/gitWeb/commit/b09c6c64d517aeba795b05b5015f0475424dd8cb">b09c6c64d5</a>#}
-{#                    <span class="grey has-emoji">Add 'test/test1.txt'</span>#}
-{#                    </th>#}
-{#                    <th class="nine wide">#}
-{#                    </th>#}
-{#                    <th class="three wide text grey right age"><span class="time-since poping up" title="" data-content="Sun, 30 Apr 2023 05:21:44 UTC" data-variation="inverted tiny">9 minutes ago</span></th>#}
-{#                    </tr>#}
-                <tbody class="class-files-body">
-                </tbody>
-            </table>
         </div>
-
-        <!-- 消息成员 -->
-{#        <div class="msg-member">#}
-{#            <div class="msg-member-title">群成员</div>#}
-{#            <div class="member-list">#}
-{#                {% for m in member_list %}#}
-{#                <div class="msg-member-cell" id="msg-member-cell-{{m.id}}">#}
-{#                    <div class="msg-member-avatar">#}
-{#                        <img class="msg-member-avatar-img" src="/static/img/avatar/{{m.avatar}}">#}
-{#                    </div>#}
-{#                    <div class="msg-member-username">{{m.username}}</div>#}
-{#                </div>#}
-{#            {% endfor %}#}
-{#            </div>#}
-{#        </div>#}
     </div>
-</div>
 
+    <div class="user profile">
+        <div class="ui container">
+            <div class="ui grid">
+                <div class="ui five wide column">
+                    <div class="ui card">
+                        <a class="profile-avatar image poping up" href="/user/settings/avatar" id="profile-avatar"
+                           data-content="Change your avatar" data-variation="inverted tiny"
+                           data-position="bottom center">
+                            <img src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon&amp;s=287"
+                                 title="haxi">
+                        </a>
+                        <div class="content">
+                            <span class="username text center class-username"></span>
+                        </div>
+                        <div class="extra content">
+                            <ul class="text black">
+                                <li>
+                                    <i class="octicon octicon-mail"></i>
+                                    <a href="mailto:8janejane@gmail.com" rel="nofollow">@gmail.com</a>
+                                </li>
+                                <li><i class="octicon octicon-clock"></i> Joined on Apr 29, 2023</li>
+                                <li>
+                                    <i class="octicon octicon-person"></i>
+                                    <a href="/haxi/followers">
+                                        0 Followers
+                                    </a>
+                                    -
+                                    <a href="/haxi/following">
+                                        0 Following
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui eleven wide column">
+                    <div class="ui secondary pointing menu">
+                        <a class="active item" href="/haxi">
+                            <i class="octicon octicon-repo"></i> Repositories
+                        </a>
+                        <a class="item">
+                        </a><a class=" item" href="/haxi?tab=activity">
+                        <i class="octicon octicon-rss"></i> Public Activity
+                    </a>
+                    </div>
+
+                    <div class="ui repository list class-repository-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
 <!-- 工具 -->
-<script type="text/javascript" charset="utf-8"  src="../static/compileJs/utils.js"></script>
-<script type="text/javascript" charset="utf-8"  src="../static/compileJs/type.js"></script>
-<script type="text/javascript" charset="utf-8"  src="../static/compileJs/api.js"></script>
-<script type="text/javascript" charset="utf-8"  src="../static/compileJs/action.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/utils.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/type.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/api.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/action.js"></script>
 <!-- 业务逻辑 -->
-<script type="text/javascript" charset="utf-8"  src="../static/compileJs/repo.js"></script>
-<script type="text/javascript" charset="utf-8"  src="../static/compileJs/file.js"></script>
-<script type="text/javascript" charset="utf-8" src="../static/compileJs/main.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/repo.js"></script>
+<script>
+    RepoContainer.initRepoList()
+</script>
 </body>
 </html>

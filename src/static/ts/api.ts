@@ -23,24 +23,28 @@ enum Path {
 
 class APIContainer {
 
-    static login = (data: apiForm, callback: ResponseCallback) => {
-        API.call(Method.Post, Path.login, data, callback)
+    // static login = (data: apiForm, callback: ResponseCallback) => {
+    //     API.call(Method.Post, Path.login, data, callback)
+    // }
+
+    static repoList = (username: string, callback: ResponseCallback) => {
+        API.call(Method.Get, Path.repoList, {}, callback)
     }
 
-    static repoList = (username: string, data: apiForm, callback: ResponseCallback) => {
-        API.call(Method.Get, Path.repoList, data, callback)
+    static repoDetail = (username: string, repoName: string, callback: ResponseCallback) => {
+        API.call(Method.Get, `/${username}/${repoName}/detail`, {}, callback)
     }
 
-    static repoAdd = (data: apiForm, callback: ResponseCallback) => {
-        API.call(Method.Post, Path.repoAdd, data, callback)
-    }
-
-    static repo = (username: string, repoName: string, data: apiForm, callback: ResponseCallback) => {
-        API.call(Method.Get, `/${username}/${repoName}`, data, callback)
-    }
-
-    static repoSuffix = (username: string, repoName: string, suffix: string, data: apiForm, callback: ResponseCallback) => {
-        API.call(Method.Post, `/${username}/${repoName}/${suffix}`, data, callback)
-    }
+    // static repoAdd = (data: apiForm, callback: ResponseCallback) => {
+    //     API.call(Method.Post, Path.repoAdd, data, callback)
+    // }
+    //
+    // static repo = (username: string, repoName: string, data: apiForm, callback: ResponseCallback) => {
+    //     API.call(Method.Get, `/${username}/${repoName}`, data, callback)
+    // }
+    //
+    // static repoSuffix = (username: string, repoName: string, suffix: string, data: apiForm, callback: ResponseCallback) => {
+    //     API.call(Method.Post, `/${username}/${repoName}/${suffix}`, data, callback)
+    // }
 
 }

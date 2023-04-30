@@ -95,10 +95,19 @@ body {
     margin: 5px;
 }
 
+.class-item-choose {
+    display: inline-block;
+}
+
 .class-item-clone {
+    display: inline-block;
     text-align: right;
     margin-left: 10px;
     height: 30px;
+}
+
+.class-clone-input {
+    width: 300px;
 }
 
 .class-files-table {
@@ -111,6 +120,9 @@ body {
     margin: 0 auto 5px;
 }
 
+#id-file-content {
+    text-align: left;
+}
 /*.msg-input {*/
 /*    text-align: center;*/
 /*}*/

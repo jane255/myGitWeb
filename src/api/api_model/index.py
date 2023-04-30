@@ -20,6 +20,14 @@ class RepoListItem(BaseModel):
     """结构"""
     repo_id: int = Field(default=None)
     repo_name: str = Field(default=None)
+    create_time: str = Field(default=None)
+
+
+class ResponseRepoDetail(RepoListItem):
+    """结构"""
+    username: str
+    clone_address: str = Field(default=None)
+    entries: t.List
 
 
 class ResponseRepoList(BaseModel):
@@ -52,12 +60,6 @@ class ResponseRepoDetailFile(BaseModel):
 
 class ResponseRepoDetailDir(ResponseRepoDetailFile):
     files: t.List
-
-
-class ResponseRepoDetail(RepoListItem):
-    """结构"""
-    clone_address: str = Field(default=None)
-    entries: t.List
 
 
 class ResponseContent(BaseModel):

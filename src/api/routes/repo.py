@@ -8,7 +8,7 @@ from api.routes import login_required, current_user
 from models.repo import MyRepo
 from models.user import User
 from services.repo import ServiceRepo
-from src.utils import log
+from src.utils import log, timestamp_to_date
 
 main = Blueprint('repo', __name__)
 
@@ -44,6 +44,7 @@ def get_list():
         item = RepoListItem(
             repo_id=repo.id,
             repo_name=repo.repo_name,
+            create_time=timestamp_to_date(repo.create_time),
         )
         result.append(item.dict())
     return dict(

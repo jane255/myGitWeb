@@ -9,14 +9,24 @@ interface apiForm {
     [key: string]: any
 }
 
+// ------- 下面是接口文档 ------------
+
+interface ResponseRepoListItem {
+    repo_id: number
+    repo_name: string
+    create_time: string
+}
+
 // /repo/list 接口返回
 interface ResponseRepoList {
     repo_list: ResponseRepoListItem[]
 }
 
-interface ResponseRepoListItem {
-    repo_id: number
-    repo_name: string
+// /detail 接口返回
+interface ResponseRepoDetail extends ResponseRepoListItem{
+    username: string
+    clone_address: string
+    entries: []
 }
 
 // /repo/add 接口返回
@@ -42,12 +52,6 @@ interface ResponseRepoDetailFile {
 
 interface ResponseRepoDetailDir extends ResponseRepoDetailFile {
     files: []
-}
-
-// /repo/add 接口返回
-interface ResponseRepoDetail extends ResponseRepoListItem{
-    clone_address: string
-    entries: []
 }
 
 // login api request param

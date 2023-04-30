@@ -57,6 +57,7 @@ class ServiceRepo:
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id)
         log("entries", entries)
         resp = ResponseRepoDetail(
+            username=user.username,
             repo_id=my_repo.id,
             repo_name=my_repo.repo_name,
             clone_address=clone_address,
@@ -128,7 +129,7 @@ class ServiceRepo:
                 path=e.get("path"),
                 is_dir=False if e.get("type") == EnumFileType.file else True,
             )
-            hash_code = commit_record.hex[:10]
+            hash_code = commit_record.hex
             commit_time = timestamp_to_date(commit_record.commit_time)
             commit_message = str(commit_record.message).strip()
             e['hash_code'] = hash_code

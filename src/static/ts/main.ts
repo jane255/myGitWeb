@@ -1,8 +1,9 @@
 const __main = function () {
-    RepoContainer.initRepoList()
-    ActionRepo.bindEvent()
-    RepoContainer.clickRepo()
-    FileContainer.click()
+    // RepoContainer.initRepoList()
+    // RepoContainer.initRepoDetail()
+    // ActionRepo.bindEvent()
+    // RepoContainer.clickRepo()
+    // FileContainer.click()
 }
 
 __main()
