@@ -1,12 +1,12 @@
 class FileContainer {
-    static listSel: HTMLSelectElement = e(`.class-file-list`)
+    static listSel: HTMLSelectElement = e(`.class-files-body`)
 
     static click = () => {
         let self = this
         let listSel = self.listSel
         listSel.addEventListener('click', function(event){
             let target = event.target as HTMLSelectElement
-            if (target.className.includes("span-file-cell-body")) {
+            if (target.className.includes("a-files-td-name")) {
                 log("click file path", target.dataset.path, target.dataset.type)
                 let path = target.dataset.path
                 let type = target.dataset.type

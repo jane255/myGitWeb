@@ -91,19 +91,19 @@ body {
     border-radius: 5px;
 }
 
-.class-repo-title {
+.class-repo-menu {
     margin: 5px;
 }
 
-#id-repo-title {
-    text-align: left;
+.class-item-clone {
+    text-align: right;
     margin-left: 10px;
     height: 30px;
 }
 
-.class-file-list {
+.class-files-table {
     width: 900px;
-    height: 700px;
+    /*height: 700px;*/
     border: 1px dashed;
     overflow: auto;
     background: #eff8ff;
@@ -148,14 +148,14 @@ body {
 /*    text-align: right;*/
 /*}*/
 
-.class-file-cell {
+.class-files-tr {
     margin: 5px;
     text-align: left;
     padding: 1px;
     border-bottom: 1px solid;
 }
 
-.img-file-cell-avatar {
+.img-files-td-icon {
     width: 25px;
     height: 25px;
     position: relative;
@@ -163,11 +163,11 @@ body {
     left: 3px;
 }
 
-.class-file-cell-avatar {
+.class-files-td-icon {
     display: inline-block;
 }
 
-.class-file-cell-body {
+.class-files-td-name {
     display: inline-block;
     margin-left: 5px;
     width: 160px;
@@ -175,15 +175,15 @@ body {
     color: blue;
 }
 
-.cell-file {
+.tr-file {
     background: rgb(237 222 240);
 }
 
-.cell-folder {
+.tr-dir {
     background: rgb(218 245 253);
 }
 
-.class-file-cell-hash {
+.class-files-td-hash {
     display: inline-block;
     background: darkgray;
     padding: 2px 6px;
@@ -191,13 +191,13 @@ body {
     color: white;
 }
 
-.class-file-cell-commit {
+.class-files-td-commit {
     display: inline-block;
     width: 100px;
     margin-right: 50px;
 }
 
-.class-file-cell-date {
+.class-files-td-date {
     text-align: right;
     display: inline-block;
     margin-left: 150px;
