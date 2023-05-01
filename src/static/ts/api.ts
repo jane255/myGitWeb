@@ -43,8 +43,8 @@ class APIContainer {
     //     API.call(Method.Get, `/${username}/${repoName}`, data, callback)
     // }
     //
-    // static repoSuffix = (username: string, repoName: string, suffix: string, data: apiForm, callback: ResponseCallback) => {
-    //     API.call(Method.Post, `/${username}/${repoName}/${suffix}`, data, callback)
-    // }
+    static repoSuffix = (path: string, data: RequestRepoSuffix, callback: ResponseCallback) => {
+        API.call(Method.Post, `${path}`, data, callback)
+    }
 
 }

@@ -62,7 +62,9 @@ class ResponseRepoDetailDir(ResponseRepoDetailFile):
     files: t.List
 
 
-class ResponseContent(BaseModel):
+# /repo/suffix
+class ResponseRepoSuffix(BaseModel):
     """结构"""
     content: str = Field(default=None)
     entries: t.List = Field(default=None)
+    path: str = Field(default=None)

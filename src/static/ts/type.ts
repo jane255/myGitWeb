@@ -73,4 +73,5 @@ interface RequestRepoSuffix {
 interface ResponserRepoSuffix {
     content: string
     entries: []
+    path: string
 }

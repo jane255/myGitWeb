@@ -1,4 +1,5 @@
 class RepoContainer {
+    static filesBodySel: HTMLSelectElement = e(`.class-files-tboody`)
 
     // 初始化仓库列表
     static initRepoList = () => {
@@ -56,52 +57,102 @@ class RepoContainer {
         APIContainer.repoDetail(username, repoName, function (r) {
             let response = JSON.parse(r)
             let responseRepoDetail: ResponseRepoDetail = response.data
+            log("responseRepoDetail", responseRepoDetail)
             // 设置仓库名
-            let headerRepoSel = e(`.class-header-breadcrumb`)
-            let username: string = responseRepoDetail.username
-            let repoName: string = responseRepoDetail.repo_name
-            appendHtml(headerRepoSel, `
-                <i class="mega-octicon octicon-repo"></i>
-                <a href="/${username}">${username}</a>
-                <div class="divider"> /</div>
-                <a href="/${username}/${repoName}">${repoName}</a>
-            `)
+            self.parseRepoName(responseRepoDetail.username, responseRepoDetail.repo_name)
+            // 设置描述
+            self.parseDesc()
             // 设置克隆地址
             self.parseCloneUrl(responseRepoDetail.clone_address)
-            // 设置文件
+            // 设置分支
             self.parseUiBreadcrumb(repoName)
+            // 解析文件，如果有 readme.md 文件，要可视化出来
             self.parseFilesBody(responseRepoDetail.entries)
         })
     }
 
-    static parseUiBreadcrumb = (repoName: string) => {
-        let pathname = window.location.pathname
-        let t = `
-            <a class="section" href="${pathname}/src/master">${repoName}</a>
+    static parseRepoName = (username: string, repoName: string) => {
+        let headerRepoSel = e(`.class-repo-name`)
+        this.clearChildren(headerRepoSel)
+        appendHtml(headerRepoSel, `
+            <i class="mega-octicon octicon-repo"></i>
+            <a href="/${username}">${username}</a>
+            <div class="divider"> /</div>
+            <a href="/${username}/${repoName}">${repoName}</a>
+        `)
+    }
+
+    static parseDesc = () => {
+        this.removeDesc()
+        let t: string = `
+                <span class="no-description text-italic">No Description</span>
+                <a class="link" href=""></a>
         `
-        let sel = e(`.class-ui-breadcrumb`)
-        appendHtml(sel, t)
+        appendHtml(e(`#repo-desc`), t)
     }
 
     static parseCloneUrl = (cloneAddress: string) => {
-        let inputSel = e(`#repo-clone-url`)
-        inputSel.value = cloneAddress
-        //
-        let httpsSel = e(`#repo-clone-https`)
-        httpsSel.dataset.link = cloneAddress
+        let sel = e(`#clone-panel`)
+        this.clearChildren(sel)
+        let t = `
+            <button class="ui basic clone button blue" id="repo-clone-https"
+                                data-link="${cloneAddress}">
+                            HTTPS
+            </button>
+            <input id="repo-clone-url" value="${cloneAddress}" readonly="">
+            <button class="ui basic icon button poping up clipboard" id="clipboard-btn" data-original="Copy"
+                    data-success="Copied!" data-error="Press ⌘-C or Ctrl-C to copy" data-content="Copy"
+                    data-variation="inverted tiny" data-clipboard-target="#repo-clone-url">
+                <i class="octicon octicon-clippy"></i>
+            </button>
+            <div class="ui basic jump dropdown icon button" tabindex="0">
+                <i class="download icon"></i>
+                <div class="menu" tabindex="-1">
+                    <a class="item" href="/haxi/gitWeb/archive/master.zip"><i
+                            class="octicon octicon-file-zip"></i> ZIP</a>
+                    <a class="item" href="/haxi/gitWeb/archive/master.tar.gz"><i
+                            class="octicon octicon-file-zip"></i> TAR.GZ</a>
+                </div>
+            </div>
+        `
+        appendHtml(sel, t)
     }
 
-    static parseFilesBody = (entries: []) => {
-        let filesBodySel: HTMLSelectElement = e(`.class-files-tboody`)
+    static parseUiBreadcrumb = (repoName: string) => {
+        let sel = e(`.class-ui-breadcrumb`)
+        this.clearChildren(sel)
         let pathname = window.location.pathname
+        let t = `
+            <a class="section class-path-section" data-path="${pathname}/src/master">${repoName}</a>
+        `
+        appendHtml(sel, t)
+    }
+
+    static parseFilesBody = (entries: [], hasParent: boolean = false, path: string=null) => {
+        let filesBodySel: HTMLSelectElement = this.filesBodySel
+        // clear
+        this.clearChildren(filesBodySel)
+        //
+        if (hasParent) {
+            this.appendParent(path)
+        }
+        let pathname: string = window.location.pathname
+        // 判断是否有 readme  文件
+        let hasReadme: boolean = false
         for (let e of entries) {
             let entry = e as ResponseRepoDetailFile | ResponseRepoDetailDir
             let span: string
             let name = entry.name
+            //
+            if (name == "README.md") {
+                hasReadme = true
+            }
             let hashCode = entry.hash_code
             let commit = entry.commit_message
             let ct = entry.commit_time
-            if (entry.type == EnumFileType.dir) {
+            let type = entry.type
+            let _path = entry.path
+            if (type == EnumFileType.dir) {
                 span = `
                     <span class="octicon octicon-file-directory"></span>
                 `
@@ -114,7 +165,7 @@ class RepoContainer {
                     <tr>
                     <td class="name">
                         ${span}
-                        <a href="${pathname}/src/master/${name}">${name}</a>
+                        <a class="a-files-path-name" data-path="${pathname}/src/master/${_path}" data-type="${type}">${name}</a>
                     </td>
                     <td class="message collapsing has-emoji">
                         <a rel="nofollow" class="ui sha label"
@@ -126,111 +177,335 @@ class RepoContainer {
             `
             appendHtml(filesBodySel, t)
         }
+        // 可视化 readme
+        if (hasReadme) {
+            this.parseReadme()
+        }
     }
 
-    // static bindButton = () => {
-    //     this.showInput()
-    //     let inputSel = this.inputSel
-    //     let _this = this
-    //     //
-    //     inputSel.addEventListener("keyup", function (event) {
-    //         let content = inputSel.value
-    //         if (event.code === "Enter" && content.length > 1) {
-    //             _this.hideInput()
-    //             log("创建新仓库名", content)
-    //             let form: apiForm = {
-    //                 "repo_name": content,
-    //             }
-    //             _this.addRepo(form)
-    //         }
-    //     })
-    // }
-    //
-    // static addRepo = (form: apiForm) => {
-    //     let self = this
-    //     // 请求后台创建新仓库
-    //     APIContainer.repoAdd(form, function(r){
-    //         let response = JSON.parse(r)
-    //         let respRepoAdd: ResponseRepoAdd = response.data
-    //         // 如果创建成功
-    //         if (respRepoAdd.result) {
-    //             // 增加仓库标签
-    //             let t: string = self.template(respRepoAdd.repo_id, respRepoAdd.repo_name)
-    //             let repoListSel: HTMLSelectElement = self.repoListSel
-    //             appendHtml(repoListSel, t)
-    //             // 进入仓库
-    //             self.enterRepo(respRepoAdd.repo_id, respRepoAdd.repo_name)
-    //         } else {
-    //             log("仓库名字已重复")
-    //             alert("仓库名字已重复")
-    //         }
-    //     })
-    // }
-    //
-    // static enterRepo = (repoId: number, repoName: string) => {
-    //     let self = this
-    //     self.showCurrentRepo(repoId, repoName)
-    //     // 获取仓库信息
-    //     let username = currentUsername()
-    //     APIContainer.repo(username, repoName, {}, function (r) {
-    //         let response = JSON.parse(r)
-    //         let respRepoDetail: ResponseRepoDetail = response.data
-    //         // 解析菜单栏
-    //         self.parseRepoMenu(respRepoDetail.clone_address)
-    //         self.parseRepoDir(respRepoDetail.entries)
-    //     })
-    // }
-    //
-    // static parseRepoFile = (path: string, content: string) => {
-    //     let tableSel = this.tableSel
-    //     this.clearElement(tableSel)
-    //     // 添加文本
-    //     let contentList = content.split('\n')
-    //     let liTemplate: string = ``
-    //     for (let i = 0; i < contentList.length; i++) {
-    //         liTemplate += `
-    //             <li class="class-file-content-${i + 1}"></li>
-    //         `
-    //     }
-    //     let t = `
-    //         <div id="id-file-content" class="tab-size-8">
-    //             <strong class="repo-read-file">${path}</strong>
-    //             <tbody class="class-files-body">
-    //                 <tr style="text-align: left">
-    //                     <td>
-    //                         <code><ol>${liTemplate}</ol></code>
-    //                     </td>
-    //                 </tr>
-    //             </tbody>
-    //         </div>
-    //     `
-    //     appendHtml(tableSel, t)
-    //     // 填充文本
-    //     for (let i = 0; i < contentList.length; i++) {
-    //         let liSel = e(`.class-file-content-${i + 1}`)
-    //         liSel.innerText = contentList[i]
-    //     }
-    // }
-    //
-    // static clearElement = (sel: HTMLSelectElement) => {
-    //     sel.replaceChildren()
-    // }
-    //
-    // static parseRepoMenu = (clone_address: string) => {
-    //     // 清除菜单栏
-    //     let sel = e(`.class-repo-menu`)
-    //     this.clearElement(sel)
-    //     //
-    //     let menuTemplate = `
-    //         <div class="class-item-choose">分支</div>
-    //         <div class="class-item-clone">
-    //             <button>https</button>
-    //             <input class="class-clone-input" value="${clone_address}">
-    //         </div>
-    //     `
-    //     appendHtml(sel, menuTemplate)
-    // }
-    //
+    static parseReadme = () => {
+        this.clearFileContent()
+        let t = `
+                <h4 class="ui top attached header" id="repo-readme">
+                    <i class="octicon octicon-book"></i>
+                    <strong>README.md</strong>
+                </h4>
+                <div class="ui unstackable attached table segment">
+                    <div id="" class="file-view markdown has-emoji">
+
+                        <div id="gitweb" class="anchor-wrap"><h1>gitWeb<a class="anchor" href="#gitweb"><span
+                                class="octicon octicon-link"></span></a></h1></div>
+                    </div>
+                </div>
+        `
+        appendHtml(e(`#file-content`), t)
+    }
+
+    static clearChildren = (sel: HTMLSelectElement) => {
+        sel.replaceChildren()
+    }
+
+    static parseFilesSuffixBody = (entries: [], path: string) => {
+        // 删除描述
+        this.removeDesc()
+        // 解析文件路径
+        this.parseFilesPath(path)
+        // 删除克隆地址
+        this.removeClonePanel()
+        // 解析文件
+        this.parseFilesBody(entries, true, path)
+        // 删除 readme
+        this.clearFileContent()
+    }
+
+    static removeDesc = () => {
+        let sel: HTMLSelectElement = e(`#repo-desc`)
+        this.clearChildren(sel)
+    }
+
+    static parseFilesPath = (path: string) => {
+        // 解析路径，假设路径是 /gua/axe/src/master/bala
+        // ['', 'gua', 'axe', 'src', 'master', 'bala']
+        let pathPrefix = path.split('/').splice(0, 5).join('/')
+        let pathSuffixList = path.split('/').splice(5)
+        let length = pathSuffixList.length
+        let sel = e(`.class-ui-breadcrumb`)
+        for (let i = 0; i < length; i++) {
+            let t: string
+            let p: string = pathSuffixList[i]
+            pathPrefix += '/' + p
+            if (i + 1 == length) {
+                t = `
+                    <div class="divider"> / </div>
+                    <span class="active section class-path-section">${p}</span>
+                `
+            } else {
+                t = `
+                    <div class="divider"> / </div>
+                    <span class="section class-path-section"><a data-path="${pathPrefix}">${p}</a></span>
+                `
+            }
+            appendHtml(sel, t)
+        }
+    }
+
+    static removeClonePanel = () => {
+        let filesBodySel: HTMLSelectElement = this.filesBodySel
+        this.clearChildren(filesBodySel)
+        //
+        let cloneSel: HTMLSelectElement = e(`#clone-panel`)
+        this.clearChildren(cloneSel)
+    }
+
+    static appendParent = (path: string) => {
+        let filesBodySel: HTMLSelectElement = this.filesBodySel
+        appendHtml(filesBodySel, this.fileParentTemplate(path))
+    }
+
+    static fileParentTemplate = (path: string) => {
+        let t: string = `
+            <tr class="has-parent">
+                <td colspan="3">
+                <i class="octicon octicon-mail-reply"></i>
+                <a data-paht="${path}">..</a></td>
+            </tr>
+        `
+        return t
+    }
+
+    static clearFileContent = () => {
+        let sel = e(`#file-content`)
+        this.clearChildren(sel)
+    }
+
+    static bindPathSectionEvent = () => {
+        let self = this
+        let sel = e(`.class-ui-breadcrumb`)
+        sel.addEventListener('click', function(event){
+            let target = event.target as HTMLSelectElement
+            if (target.className.includes("class-path-section")) {
+                let path: string = target.dataset.path
+                let type: EnumFileType = EnumFileType.dir
+                let form = {
+                    type: type
+                }
+                if (path.split('/').length == 5) {
+                    self.initRepoDetail()
+                } else {
+                    APIContainer.repoSuffix(`${path}`, form, function (r) {
+                        let response = JSON.parse(r)
+                        log("response:", response.data)
+                        let res: ResponserRepoSuffix = response.data
+                        self.parseFilesSuffixBody(res.entries, res.path)
+                    })
+                }
+            }
+        })
+    }
+
+    static parseFile = (path: string, content: string) => {
+        // 删除描述
+        this.removeDesc()
+        // 删除 commits 栏位
+        this.removeGitStats()
+        // 隐藏 newFile uploadFile
+        this.hideFileButtons()
+        // 删除克隆
+        this.removeClonePanel()
+        //
+        this.hideRepoFilesTable()
+        //
+        this.parseFilesPath(path)
+        // 添加文本标题
+        // this.appendRepoReadFile(path)
+        // 添加文本
+        this.appendFileContent(content)
+    }
+
+    static removeGitStats = () => {
+        let sel = e(`#git-stats`)
+        this.clearChildren(sel)
+    }
+
+    static hideFileButtons = () => {
+        let sel = e(`#file-buttons`)
+        sel.style.display = 'none'
+    }
+
+    static displayFileButtons = () => {
+        let sel = e(`#file-buttons`)
+        sel.style.display = 'inline-flex'
+    }
+
+    static hideRepoFilesTable = () => {
+        let sel = e(`#repo-files-table`)
+        sel.style.display = 'none'
+    }
+
+    static displayRepoFilesTable = () => {
+        let sel = e(`#repo-files-table`)
+        sel.style.display = 'table'
+    }
+
+    static appendRepoReadFile = (path: string) => {
+        this.clearFileContent()
+        let sel = e(`#file-content`)
+        let filename = path.split('/').splice(-1)
+        let t: string = `
+            <h4 class="ui top attached header" id="repo-read-file">
+                <i class="octicon octicon-file-text ui left"></i>
+                <strong>${filename}</strong> 
+                <span class="text grey normal">4 B</span>
+                <div class="ui right file-actions">
+                    <div class="ui buttons">
+                        <a class="ui button" href="/haxi/gitWeb/src/a61c249028cd1120582f506a68bf8fecc6a3b099/test1.txt">Permalink</a>
+                        <a class="ui button" href="/haxi/gitWeb/commits/master/test1.txt">History</a>
+                        <a class="ui button" href="/haxi/gitWeb/raw/master/test1.txt">Raw</a>
+                    </div>
+                    <a href="/haxi/gitWeb/_edit/master/test1.txt"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                    <a href="/haxi/gitWeb/_delete/master/test1.txt"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                </div>
+           </h4>
+        `
+        appendHtml(sel, t)
+    }
+
+    static appendFileContent = (content: string) => {
+        let contentList = content.split('\n')
+        let spanTemplate: string = ``
+        let liTemplate: string = ``
+        // for (let i = 0; i < contentList.length; i++) {
+        //     let offset = (i+1).toString()
+        //     spanTemplate += `
+        //         <span id="L${offset}">${offset}</span>
+        //     `
+        //     liTemplate += `
+        //         <li class="L${offset}" rel="L${offset}">${contentList[i]}</li>
+        //     `
+        // }
+        let sel = e(`#file-content`)
+        let t = `
+            <div class="ui unstackable attached table segment">
+                <div id="" class="file-view code-view has-emoji">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td class="lines-num">
+                                      ${spanTemplate}
+                                </td>
+                                <td class="lines-code">
+                                    <pre>
+                                        <code class="nohighlight">
+                                            <ol class="linenums">
+                                                ${liTemplate}
+                                            </ol>
+                                        </code>
+                                    </pre>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `
+
+
+        let ttt = `
+<!--                        <div id="file-content" class="tab-size-8">-->
+                <h4 class="ui top attached header" id="repo-read-file">
+
+                    <i class="octicon octicon-file-text ui left"></i>
+                    <strong>test1.txt</strong> <span class="text grey normal">1.6 KB</span>
+
+
+                    <div class="ui right file-actions">
+                        <div class="ui buttons">
+
+                            <a class="ui button"
+                               href="/haxi/gitWeb/src/0294fbb51704fcdf69d178fc308262c577f75f5c/test1.txt">Permalink</a>
+
+                            <a class="ui button" href="/haxi/gitWeb/commits/master/test1.txt">History</a>
+                            <a class="ui button" href="/haxi/gitWeb/raw/master/test1.txt">Raw</a>
+                        </div>
+
+
+                        <a href="/haxi/gitWeb/_edit/master/test1.txt"><i
+                                class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file"
+                                data-position="bottom center" data-variation="tiny inverted"></i></a>
+
+
+                        <a href="/haxi/gitWeb/_delete/master/test1.txt"><i
+                                class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up"
+                                data-content="Delete this file" data-position="bottom center"
+                                data-variation="tiny inverted"></i></a>
+
+
+                    </div>
+
+                </h4>
+                <div class="ui unstackable attached table segment">
+                    <div id="" class="file-view code-view has-emoji">
+
+                        <table>
+                            <tbody>
+                            <tr>
+
+                                <td class="lines-num"></td>
+                                <td class="lines-code">
+                                <pre>
+                                <code class="nohighlight">
+                                <ol class="linenums"></ol>
+                                </code>
+                                </pre>
+                                
+                                </td>
+
+                            </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+
+        `
+        appendHtml(sel, ttt)
+
+        let lineNum = e(`.lines-num`)
+        let linenums = e(`.linenums`)
+        for (let i = 0; i < contentList.length; i++) {
+            let offset = (i+1).toString()
+            // spanTemplate += `
+            //     <span id="L${offset}">${offset}</span>
+            // `
+            // liTemplate += `
+            //     <li class="L${offset}" rel="L${offset}">`${contentList[i]}`</li>
+            // `
+            let span = `
+                <span id="L${offset}">${offset}</span>
+            `
+            appendHtml(lineNum, span)
+            // appendHtml(linenums, li)
+        }
+        for (let i = 0; i < contentList.length; i++) {
+            let offset = (i+1).toString()
+            // spanTemplate += `
+            //     <span id="L${offset}">${offset}</span>
+            // `
+            // liTemplate += `
+            //     <li class="L${offset}" rel="L${offset}">${contentList[i]}</li>
+            // `
+            let span = `
+                <li class="L${offset}" rel="L${offset}"></li>
+            `
+            appendHtml(linenums, span)
+        }
+        for (let i = 0; i < contentList.length; i++) {
+            let liSel = e(`.L${(i + 1).toString()}`)
+            liSel.innerText = contentList[i]
+        }
+    }
+
     // static showCurrentRepo = (repoId: number, repoName: string) => {
     //     let s = `current-repo`
     //     let currentRepoSel = e(`.${s}`)
@@ -255,18 +530,6 @@ class RepoContainer {
     //     inputSel.value = ''
     // }
     //
-    // static clickRepo = () => {
-    //     let self = this
-    //     let repoListSel = self.repoListSel
-    //     repoListSel.addEventListener('click', function(event){
-    //         let target = event.target as HTMLSelectElement
-    //         if (target.className.includes("class-repo-name")) {
-    //             let repoId = parseInt(target.dataset.id)
-    //             let repoName = target.innerText
-    //             self.enterRepo(repoId, repoName)
-    //         }
-    //     })
-    // }
 }
 
 class ActionRepo extends Action {

@@ -5,7 +5,7 @@ import pygit2
 from git import Repo
 
 import config
-from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseContent
+from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -51,10 +51,10 @@ class ServiceRepo:
         return path
 
     @classmethod
-    def repo_detail(cls, repo_name: str, user: User) -> ResponseRepoDetail:
+    def repo_detail(cls, repo_name: str, user: User, branch_name: str = 'master') -> ResponseRepoDetail:
         my_repo = MyRepo.find_by(repo_name=repo_name)
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
-        entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id)
+        entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
         log("entries", entries)
         resp = ResponseRepoDetail(
             username=user.username,
@@ -233,7 +233,7 @@ class ServiceRepo:
                         # 如果是文件夹, 则算出该文件路径对应的文件夹路径
                         # os.path.dirname 是通过文件路径, 计算出该文件所在的文件夹的路径
                         d = os.path.dirname(f)
-                        if d == path:
+                        if d.startswith(path + "/") or d == path:
                             return commit
                     else:
                         if f == path:
@@ -248,18 +248,20 @@ class ServiceRepo:
         return f"http://localhost:5000/{user_name}/{repo_name}.git"
 
     @classmethod
-    def repo_suffix(cls, repo_name: str, user: User, suffix: str, suffix_type: EnumFileType) -> ResponseContent:
+    def repo_suffix(cls, repo_name: str, user: User, branch_name: str, suffix: str,
+                    suffix_type: EnumFileType) -> ResponseRepoSuffix:
         if suffix_type == EnumFileType.file.value:
-            content: str = cls.file_content(repo_name=repo_name, user_id=user.id, path=suffix)
+            content: str = cls.file_content(repo_name=repo_name, user_id=user.id, path=suffix, branch_name=branch_name)
             log("content", content)
-            resp = ResponseContent(
+            resp = ResponseRepoSuffix(
                 content=content,
             )
             return resp
         else:
-            entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, path=suffix)
+            entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, path=suffix,
+                                                       branch_name=branch_name)
             log("entries", entries)
-            resp = ResponseContent(
+            resp = ResponseRepoSuffix(
                 entries=entries,
             )
             return resp
@@ -270,7 +272,9 @@ class ServiceRepo:
     # path: 该文件在仓库中的路径
     @classmethod
     def file_content(cls, repo_name: str, user_id: int, path: str, branch_name: str = 'master') -> str:
+        log("file_content", repo_name, user_id, path, branch_name)
         repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+        log("repo_path", repo_path)
         # 通过裸仓库路径生成 Repository 对象
         repo = pygit2.Repository(repo_path)
         # 通过分支名生成 pygit2.Branch 对象, pygit2.Branch 对应在 git 中的概念是分支

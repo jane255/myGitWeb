@@ -1,220 +1,220 @@
-.class-display {
-    margin-top: 30px;
-    font-size: 60px;
-    border: 1px dashed;
-}
-
-body {
-    background: #ecf6db;
-    position: relative;
-}
-
-.class-box {
-    background: white;
-    padding: 30px;
-    border-radius: 30px;
-    width: 1200px;
-    position: absolute;
-    top: 50px;
-    left: 0;
-    right: 0;
-    margin: auto;
-}
-
-.class-form-add-repo {
-    margin-left: 3px;
-}
-
-.class-button-add-repo {
-    background: #c4fec5;
-}
-
-.class-input-add-repo {
-    display: none;
-    width: 300px;
-}
-
-.input-display {
-    display: inline-block;
-}
-
-.class-container {
-    display: flex;
-}
-
-.class-repo-list {
-    border: 1px dashed;
-    width: 100px;
-    height: 750px;
-    display: inline-block;
-    margin: 3px;
-    background: aliceblue;
-    border-radius: 5px;
-}
-
-.msg-member-title {
-    text-align: center;
-    margin: 5px;
-    font-size: 16px;
-}
-
-.class-repo-name {
-    height: 30px;
-    margin: 3px 3px 1px;
-    text-align: center;
-    border: 1px solid;
-    font-size: 18px;
-    border-radius: 5px;
-}
-
-.current-repo {
-    background-color: #ffc107;
-}
-
-.class-repo-body {
-    background: white;
-    display: inline-block;
-    width: 900px;
-    height: 750px;
-    border: 1px dashed;
-    margin: 3px;
-    border-radius: 5px;
-}
-
-.msg-member {
-    border: 1px dashed;
-    width: 100px;
-    height: 750px;
-    display: inline-block;
-    margin: 3px;
-    background: aliceblue;
-    border-radius: 5px;
-}
-
-.class-repo-menu {
-    margin: 5px;
-}
-
-.class-item-choose {
-    display: inline-block;
-}
-
-.class-item-clone {
-    display: inline-block;
-    text-align: right;
-    margin-left: 10px;
-    height: 30px;
-}
-
-.class-clone-input {
-    width: 300px;
-}
-
-.class-files-table {
-    width: 900px;
-    /*height: 700px;*/
-    border: 1px dashed;
-    overflow: auto;
-    background: #eff8ff;
-    text-align: center;
-    margin: 0 auto 5px;
-}
-
-#id-file-content {
-    text-align: left;
-}
-/*.msg-input {*/
-/*    text-align: center;*/
-/*}*/
-
-/*#id-input {*/
-/*    width: 500px;*/
-/*    height: 100px;*/
+/*.class-display {*/
+/*    margin-top: 30px;*/
+/*    font-size: 60px;*/
 /*    border: 1px dashed;*/
-/*    word-break: break-all;*/
-/*    overflow: auto;*/
-/*    font-size: 15px;*/
 /*}*/
 
-/*.msg-cell-me-username, .msg-cell-you-username, .msg-cell-notice {*/
-/*    font-size: 12px;*/
-/*    color: #a0abcb;*/
-/*    padding: 5px;*/
+/*body {*/
+/*    background: #ecf6db;*/
+/*    position: relative;*/
 /*}*/
 
-/*.msg-cell-me, .class-file-cell {*/
-/*    margin: 5px;*/
+/*.class-box {*/
+/*    background: white;*/
+/*    padding: 30px;*/
+/*    border-radius: 30px;*/
+/*    width: 1200px;*/
+/*    position: absolute;*/
+/*    top: 50px;*/
+/*    left: 0;*/
+/*    right: 0;*/
+/*    margin: auto;*/
 /*}*/
 
-/*.msg-cell-msg {*/
-/*    border-width: 1px;*/
-/*    padding: 10px 15px;*/
-/*    border-radius: 5px;*/
-/*    word-break: break-all;*/
+/*.class-form-add-repo {*/
+/*    margin-left: 3px;*/
+/*}*/
+
+/*.class-button-add-repo {*/
+/*    background: #c4fec5;*/
+/*}*/
+
+/*.class-input-add-repo {*/
+/*    display: none;*/
+/*    width: 300px;*/
+/*}*/
+
+/*.input-display {*/
 /*    display: inline-block;*/
-/*    max-width: 400px;*/
+/*}*/
+
+/*.class-container {*/
+/*    display: flex;*/
+/*}*/
+
+/*.class-repo-list {*/
+/*    border: 1px dashed;*/
+/*    width: 100px;*/
+/*    height: 750px;*/
+/*    display: inline-block;*/
+/*    margin: 3px;*/
+/*    background: aliceblue;*/
+/*    border-radius: 5px;*/
+/*}*/
+
+/*.msg-member-title {*/
+/*    text-align: center;*/
+/*    margin: 5px;*/
 /*    font-size: 16px;*/
 /*}*/
 
-/*.msg-cell-me {*/
-/*    text-align: right;*/
+/*.class-repo-name {*/
+/*    height: 30px;*/
+/*    margin: 3px 3px 1px;*/
+/*    text-align: center;*/
+/*    border: 1px solid;*/
+/*    font-size: 18px;*/
+/*    border-radius: 5px;*/
 /*}*/
 
-.class-files-tr {
-    margin: 5px;
-    text-align: left;
-    padding: 1px;
-    border-bottom: 1px solid;
-}
+/*.current-repo {*/
+/*    background-color: #ffc107;*/
+/*}*/
 
-.img-files-td-icon {
-    width: 25px;
-    height: 25px;
-    position: relative;
-    top: 4px;
-    left: 3px;
-}
+/*.class-repo-body {*/
+/*    background: white;*/
+/*    display: inline-block;*/
+/*    width: 900px;*/
+/*    height: 750px;*/
+/*    border: 1px dashed;*/
+/*    margin: 3px;*/
+/*    border-radius: 5px;*/
+/*}*/
 
-.class-files-td-icon {
-    display: inline-block;
-}
+/*.msg-member {*/
+/*    border: 1px dashed;*/
+/*    width: 100px;*/
+/*    height: 750px;*/
+/*    display: inline-block;*/
+/*    margin: 3px;*/
+/*    background: aliceblue;*/
+/*    border-radius: 5px;*/
+/*}*/
 
-.class-files-td-name {
-    display: inline-block;
-    margin-left: 5px;
-    width: 160px;
-    text-align: left;
-    color: blue;
-}
+/*.class-repo-menu {*/
+/*    margin: 5px;*/
+/*}*/
 
-.tr-file {
-    background: rgb(237 222 240);
-}
+/*.class-item-choose {*/
+/*    display: inline-block;*/
+/*}*/
 
-.tr-dir {
-    background: rgb(218 245 253);
-}
+/*.class-item-clone {*/
+/*    display: inline-block;*/
+/*    text-align: right;*/
+/*    margin-left: 10px;*/
+/*    height: 30px;*/
+/*}*/
 
-.class-files-td-hash {
-    display: inline-block;
-    background: darkgray;
-    padding: 2px 6px;
-    border-radius: 5px;
-    color: white;
-}
+/*.class-clone-input {*/
+/*    width: 300px;*/
+/*}*/
 
-.class-files-td-commit {
-    display: inline-block;
-    width: 100px;
-    margin-right: 50px;
-}
+/*.class-files-table {*/
+/*    width: 900px;*/
+/*    !*height: 700px;*!*/
+/*    border: 1px dashed;*/
+/*    overflow: auto;*/
+/*    background: #eff8ff;*/
+/*    text-align: center;*/
+/*    margin: 0 auto 5px;*/
+/*}*/
 
-.class-files-td-date {
-    text-align: right;
-    display: inline-block;
-    margin-left: 150px;
-    color: gray;
-}
+/*#id-file-content {*/
+/*    text-align: left;*/
+/*}*/
+/*!*.msg-input {*!*/
+/*!*    text-align: center;*!*/
+/*!*}*!*/
+
+/*!*#id-input {*!*/
+/*!*    width: 500px;*!*/
+/*!*    height: 100px;*!*/
+/*!*    border: 1px dashed;*!*/
+/*!*    word-break: break-all;*!*/
+/*!*    overflow: auto;*!*/
+/*!*    font-size: 15px;*!*/
+/*!*}*!*/
+
+/*!*.msg-cell-me-username, .msg-cell-you-username, .msg-cell-notice {*!*/
+/*!*    font-size: 12px;*!*/
+/*!*    color: #a0abcb;*!*/
+/*!*    padding: 5px;*!*/
+/*!*}*!*/
+
+/*!*.msg-cell-me, .class-file-cell {*!*/
+/*!*    margin: 5px;*!*/
+/*!*}*!*/
+
+/*!*.msg-cell-msg {*!*/
+/*!*    border-width: 1px;*!*/
+/*!*    padding: 10px 15px;*!*/
+/*!*    border-radius: 5px;*!*/
+/*!*    word-break: break-all;*!*/
+/*!*    display: inline-block;*!*/
+/*!*    max-width: 400px;*!*/
+/*!*    font-size: 16px;*!*/
+/*!*}*!*/
+
+/*!*.msg-cell-me {*!*/
+/*!*    text-align: right;*!*/
+/*!*}*!*/
+
+/*.class-files-tr {*/
+/*    margin: 5px;*/
+/*    text-align: left;*/
+/*    padding: 1px;*/
+/*    border-bottom: 1px solid;*/
+/*}*/
+
+/*.img-files-td-icon {*/
+/*    width: 25px;*/
+/*    height: 25px;*/
+/*    position: relative;*/
+/*    top: 4px;*/
+/*    left: 3px;*/
+/*}*/
+
+/*.class-files-td-icon {*/
+/*    display: inline-block;*/
+/*}*/
+
+/*.class-files-td-name {*/
+/*    display: inline-block;*/
+/*    margin-left: 5px;*/
+/*    width: 160px;*/
+/*    text-align: left;*/
+/*    color: blue;*/
+/*}*/
+
+/*.tr-file {*/
+/*    background: rgb(237 222 240);*/
+/*}*/
+
+/*.tr-dir {*/
+/*    background: rgb(218 245 253);*/
+/*}*/
+
+/*.class-files-td-hash {*/
+/*    display: inline-block;*/
+/*    background: darkgray;*/
+/*    padding: 2px 6px;*/
+/*    border-radius: 5px;*/
+/*    color: white;*/
+/*}*/
+
+/*.class-files-td-commit {*/
+/*    display: inline-block;*/
+/*    width: 100px;*/
+/*    margin-right: 50px;*/
+/*}*/
+
+/*.class-files-td-date {*/
+/*    text-align: right;*/
+/*    display: inline-block;*/
+/*    margin-left: 150px;*/
+/*    color: gray;*/
+/*}*/
 
 
 
@@ -227,25 +227,25 @@ body {
 
 
 
-.msg-member-avatar, .msg-member-username {
-    display: inline-block;
-}
+/*.msg-member-avatar, .msg-member-username {*/
+/*    display: inline-block;*/
+/*}*/
 
-.msg-member-avatar {
-    margin-left: 4px;
-}
+/*.msg-member-avatar {*/
+/*    margin-left: 4px;*/
+/*}*/
 
-.msg-member-avatar-img {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    margin-bottom: -4px;
-}
+/*.msg-member-avatar-img {*/
+/*    width: 20px;*/
+/*    height: 20px;*/
+/*    border-radius: 50%;*/
+/*    margin-bottom: -4px;*/
+/*}*/
 
-.msg-member-cell {
-    margin-left: 5px;
-}
+/*.msg-member-cell {*/
+/*    margin-left: 5px;*/
+/*}*/
 
-.msg-member-username {
-    font-size: 15px;
-}
+/*.msg-member-username {*/
+/*    font-size: 15px;*/
+/*}*/

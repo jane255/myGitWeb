@@ -5,7 +5,7 @@ from flask import (
 )
 from flask_httpauth import HTTPBasicAuth
 
-from api.api_model.index import ResponseRepoDetail, ResponseContent
+from api.api_model.index import ResponseRepoDetail, ResponseRepoSuffix
 from api.routes import login_required, current_user, get_request_json
 from models.user import User
 from services.handle import ServiceRepoHandle
@@ -125,14 +125,13 @@ def repo_detail(username: str, repo_name: str):
     return response.dict()
 
 
-# 仓库嵌套文件夹
-@main.route('/<username>/<repo_name>/<path:suffix>', methods=['POST'])
+@main.route('/<username>/<repo_name>/src/<branch_name>/<path:suffix>', methods=['POST'])
 @login_required
-def repo_suffix(username: str, repo_name: str, suffix):
+def repo_suffix(username: str, repo_name: str, branch_name: str, suffix):
     form = get_request_json()
     suffix_type = form.get('type')
-    log("suffix_type", suffix_type)
     user = current_user()
-    repo_detail: ResponseContent = ServiceRepo.repo_suffix(
-        repo_name=repo_name, user=user, suffix=suffix, suffix_type=suffix_type)
-    return repo_detail.dict()
+    response: ResponseRepoSuffix = ServiceRepo.repo_suffix(
+        repo_name=repo_name, user=user, branch_name=branch_name, suffix=suffix, suffix_type=suffix_type)
+    response.path = request.path
+    return response.dict()
