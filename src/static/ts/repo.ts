@@ -259,7 +259,9 @@ class RepoContainer {
 
     static appendParent = (path: string) => {
         let filesBodySel: HTMLSelectElement = this.filesBodySel
-        appendHtml(filesBodySel, this.fileParentTemplate(path))
+        let pathArray = path.split('/')
+        let pathParent = pathArray.splice(0, pathArray.length - 1).join('/')
+        appendHtml(filesBodySel, this.fileParentTemplate(pathParent))
     }
 
     static fileParentTemplate = (path: string) => {
@@ -267,7 +269,7 @@ class RepoContainer {
             <tr class="has-parent">
                 <td colspan="3">
                 <i class="octicon octicon-mail-reply"></i>
-                <a data-paht="${path}">..</a></td>
+                <a class="a-files-path-name" data-path="${path}">..</a></td>
             </tr>
         `
         return t
@@ -312,13 +314,13 @@ class RepoContainer {
         this.hideFileButtons()
         // 删除克隆
         this.removeClonePanel()
-        //
+        // 隐藏最新 commit
         this.hideRepoFilesTable()
-        //
+        // 解析当前文件路径
         this.parseFilesPath(path)
-        // 添加文本标题
-        // this.appendRepoReadFile(path)
-        // 添加文本
+        // 添加文本标题栏
+        this.appendRepoReadFile(path)
+        // 添加文本框
         this.appendFileContent(content)
     }
 
@@ -374,15 +376,15 @@ class RepoContainer {
         let contentList = content.split('\n')
         let spanTemplate: string = ``
         let liTemplate: string = ``
-        // for (let i = 0; i < contentList.length; i++) {
-        //     let offset = (i+1).toString()
-        //     spanTemplate += `
-        //         <span id="L${offset}">${offset}</span>
-        //     `
-        //     liTemplate += `
-        //         <li class="L${offset}" rel="L${offset}">${contentList[i]}</li>
-        //     `
-        // }
+        for (let i = 0; i < contentList.length; i++) {
+            let offset = (i+1).toString()
+            spanTemplate += `
+                <span id="L${offset}">${offset}</span>
+            `
+            liTemplate += `
+                <li class="L${offset}" rel="L${offset}"></li>
+            `
+        }
         let sel = e(`#file-content`)
         let t = `
             <div class="ui unstackable attached table segment">
@@ -408,128 +410,13 @@ class RepoContainer {
                 </div>
             </div>
         `
-
-
-        let ttt = `
-<!--                        <div id="file-content" class="tab-size-8">-->
-                <h4 class="ui top attached header" id="repo-read-file">
-
-                    <i class="octicon octicon-file-text ui left"></i>
-                    <strong>test1.txt</strong> <span class="text grey normal">1.6 KB</span>
-
-
-                    <div class="ui right file-actions">
-                        <div class="ui buttons">
-
-                            <a class="ui button"
-                               href="/haxi/gitWeb/src/0294fbb51704fcdf69d178fc308262c577f75f5c/test1.txt">Permalink</a>
-
-                            <a class="ui button" href="/haxi/gitWeb/commits/master/test1.txt">History</a>
-                            <a class="ui button" href="/haxi/gitWeb/raw/master/test1.txt">Raw</a>
-                        </div>
-
-
-                        <a href="/haxi/gitWeb/_edit/master/test1.txt"><i
-                                class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file"
-                                data-position="bottom center" data-variation="tiny inverted"></i></a>
-
-
-                        <a href="/haxi/gitWeb/_delete/master/test1.txt"><i
-                                class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up"
-                                data-content="Delete this file" data-position="bottom center"
-                                data-variation="tiny inverted"></i></a>
-
-
-                    </div>
-
-                </h4>
-                <div class="ui unstackable attached table segment">
-                    <div id="" class="file-view code-view has-emoji">
-
-                        <table>
-                            <tbody>
-                            <tr>
-
-                                <td class="lines-num"></td>
-                                <td class="lines-code">
-                                <pre>
-                                <code class="nohighlight">
-                                <ol class="linenums"></ol>
-                                </code>
-                                </pre>
-                                
-                                </td>
-
-                            </tr>
-                            </tbody>
-                        </table>
-
-                    </div>
-                </div>
-            </div>
-
-        `
-        appendHtml(sel, ttt)
-
-        let lineNum = e(`.lines-num`)
-        let linenums = e(`.linenums`)
-        for (let i = 0; i < contentList.length; i++) {
-            let offset = (i+1).toString()
-            // spanTemplate += `
-            //     <span id="L${offset}">${offset}</span>
-            // `
-            // liTemplate += `
-            //     <li class="L${offset}" rel="L${offset}">`${contentList[i]}`</li>
-            // `
-            let span = `
-                <span id="L${offset}">${offset}</span>
-            `
-            appendHtml(lineNum, span)
-            // appendHtml(linenums, li)
-        }
-        for (let i = 0; i < contentList.length; i++) {
-            let offset = (i+1).toString()
-            // spanTemplate += `
-            //     <span id="L${offset}">${offset}</span>
-            // `
-            // liTemplate += `
-            //     <li class="L${offset}" rel="L${offset}">${contentList[i]}</li>
-            // `
-            let span = `
-                <li class="L${offset}" rel="L${offset}"></li>
-            `
-            appendHtml(linenums, span)
-        }
+        appendHtml(sel, t)
+        // 这时候才插入文本，为了保证文本不被执行（假设文本里有 html 代码
         for (let i = 0; i < contentList.length; i++) {
             let liSel = e(`.L${(i + 1).toString()}`)
             liSel.innerText = contentList[i]
         }
     }
-
-    // static showCurrentRepo = (repoId: number, repoName: string) => {
-    //     let s = `current-repo`
-    //     let currentRepoSel = e(`.${s}`)
-    //     if (currentRepoSel !== null) {
-    //         currentRepoSel.className = 'class-repo-name'
-    //     }
-    //     let idRepoSel = e(`#class-repo-id-${repoId.toString()}`)
-    //     idRepoSel.className += ' ' + s
-    //     //
-    //     let body = e(`.class-repo-body`)
-    //     body.dataset.repo = repoName
-    // }
-    //
-    // static showInput = () => {
-    //     let inputSel = this.inputSel
-    //     inputSel.className += ' input-display'
-    // }
-    //
-    // static hideInput = () => {
-    //     let inputSel = this.inputSel
-    //     inputSel.className = this.input
-    //     inputSel.value = ''
-    // }
-    //
 }
 
 class ActionRepo extends Action {
