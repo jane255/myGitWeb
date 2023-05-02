@@ -25,9 +25,9 @@ class RepoListItem(BaseModel):
 
 class ResponseRepoDetail(RepoListItem):
     """结构"""
-    username: str
     clone_address: str = Field(default=None)
     entries: t.List
+    path: str
 
 
 class ResponseRepoList(BaseModel):

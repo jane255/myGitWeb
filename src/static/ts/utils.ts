@@ -8,6 +8,10 @@ const appendHtml = (element: HTMLSelectElement, html: string) => {
     element.insertAdjacentHTML('beforeend', html)
 }
 
+const prependHtml = (element: HTMLSelectElement, html: string) => {
+    element.insertAdjacentHTML('afterbegin', html)
+}
+
 const bindEvent = (element: string, eventName: string, callback: EventCallback) => {
     let ele = e(element)
     ele.addEventListener(eventName, callback)

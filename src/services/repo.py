@@ -52,16 +52,13 @@ class ServiceRepo:
 
     @classmethod
     def repo_detail(cls, repo_name: str, user: User, branch_name: str = 'master') -> ResponseRepoDetail:
-        my_repo = MyRepo.find_by(repo_name=repo_name)
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
         log("entries", entries)
         resp = ResponseRepoDetail(
-            username=user.username,
-            repo_id=my_repo.id,
-            repo_name=my_repo.repo_name,
             clone_address=clone_address,
             entries=entries,
+            path=f"/{user.username}/{repo_name}/src/{branch_name}",
         )
         return resp
 

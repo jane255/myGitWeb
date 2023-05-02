@@ -23,10 +23,10 @@ interface ResponseRepoList {
 }
 
 // /detail 接口返回
-interface ResponseRepoDetail extends ResponseRepoListItem{
-    username: string
+interface ResponseRepoDetail {
     clone_address: string
     entries: []
+    path: string
 }
 
 // /repo/add 接口返回

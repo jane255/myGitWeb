@@ -263,133 +263,19 @@
 
         </div>
 
-        <div class="ui container">
-
-            <p id="repo-desc">
-                <span class="no-description text-italic">No Description</span>
-                <a class="link" href=""></a>
-            </p>
-            <div class="ui segment" id="git-stats">
-                <div class="ui two horizontal center link list">
-                    <div class="item">
-                        <a href="/haxi/gitWeb/commits/master"><span class="ui text black"><i
-                                class="octicon octicon-history"></i> <b>0</b> Commits</span> </a>
-                    </div>
-                    <div class="item">
-                        <a href="/haxi/gitWeb/branches"><span class="ui text black"><i
-                                class="octicon octicon-git-branch"></i><b>1</b> Branches</span> </a>
-                    </div>
-                    <div class="item">
-                        <a href="/haxi/gitWeb/releases"><span class="ui text black"><i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="ui secondary menu">
-
-                <div class="fitted item">
-                    <a href="/haxi/gitWeb/compare/master...master">
-                        <button class="ui green small button"><i class="octicon octicon-git-compare"></i></button>
-                    </a>
-                </div>
-
-                <div class="fitted item choose reference">
-                    <div class="ui floating filter dropdown" data-no-results="No results found." tabindex="0">
-                        <div class="ui basic small button">
-			<span class="text">
-				<i class="octicon octicon-git-branch"></i>
-				Branch:
-				<strong>master</strong>
-			</span>
-                            <i class="dropdown icon" tabindex="0">
-                                <div class="menu" tabindex="-1"></div>
-                            </i>
-                        </div>
-                        <div class="menu" tabindex="-1">
-                            <div class="ui icon search input">
-                                <i class="filter icon"></i>
-                                <input name="search" placeholder="Filter branch or tag...">
-                            </div>
-                            <div class="header">
-                                <div class="ui grid">
-                                    <div class="two column row">
-                                        <a class="reference column" href="#" data-target="#branch-list">
-							<span class="text black">
-								Branches
-							</span>
-                                        </a>
-                                        <a class="reference column" href="#" data-target="#tag-list">
-							<span class="text ">
-								Tags
-							</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="branch-list" class="scrolling menu">
-
-                                <div class="item selected" data-url="/haxi/gitWeb/src/master">master</div>
-
-                            </div>
-                            <div id="tag-list" class="scrolling menu" style="display: none">
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="fitted item">
-                    <div class="ui breadcrumb class-ui-breadcrumb">
-                    </div>
-                </div>
-                <div class="right fitted item">
-                    <div id="file-buttons" class="ui tiny blue buttons">
-                        <a href="/haxi/gitWeb/_new/master/" class="ui button">
-                            New file
-                        </a>
-
-
-                        <a href="/haxi/gitWeb/_upload/master/" class="ui button">
-                            Upload file
-                        </a>
-
-                    </div>
-
-
-                    <div class="ui action small input" id="clone-panel">
-
-                    </div>
-
-                </div>
-            </div>
-
-            <table id="repo-files-table" class="ui unstackable fixed single line table">
-                <thead>
-                <tr>
-                    <th class="four wide">
-
-                        <img class="ui avatar image img-12"
-                             src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
-                        <a href="/haxi"><strong>haxi</strong></a>
-
-                        <a rel="nofollow" class="ui sha label"
-                           href="/haxi/gitWeb/commit/b780a75d2d62d8473df9b0968238e4454245fea1">b780a75d2d</a>
-                        <span class="grey has-emoji">Add 'test1.txt'</span>
-                    </th>
-                    <th class="nine wide">
-                    </th>
-                    <th class="three wide text grey right age"><span class="time-since poping up" title=""
-                                                                     data-content="Sun, 30 Apr 2023 08:03:29 UTC"
-                                                                     data-variation="inverted tiny">6 hours ago</span>
-                    </th>
-                </tr>
-                </thead>
+        <div class="ui container body-wrapper">
+            {# 描述栏 #}
+            {# commits 栏 #}
+            {# 二级菜单 #}
+                {# 分支比较 #}
+                {# 分支选择 #}
+                {# 当前目录 #}
+                {# 新文件和克隆栏 #}
+            {# 仓库文件 #}
+                {# 最新 commit #}
+                {# 文件目录 #}
                 {# 展示仓库文件 #}
-                <tbody class="class-files-tboody">
-                </tbody>
-            </table>
-                <div id="file-content" class="tab-size-8"></div>
+                {# 展示readme #}
         </div>
     </div>
 
@@ -404,9 +290,10 @@
 <script type="text/javascript" charset="utf-8" src="../static/compileJs/repo.js"></script>
 <script type="text/javascript" charset="utf-8" src="../static/compileJs/file.js"></script>
 <script>
-    RepoContainer.initRepoDetail()
-    FileContainer.bindEvent()
-    RepoContainer.bindPathSectionEvent()
+    RepoContainer.initRepo()
+    ActionRepo.bindEvent()
+    {#FileContainer.bindEvent()#}
+    {#RepoContainer.bindPathSectionEvent()#}
 </script>
 <!-- -->
 <link rel="stylesheet" href="/static/css/plugins/highlight-9.18.0/github.css">
