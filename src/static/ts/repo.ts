@@ -63,17 +63,100 @@ class RepoContainer {
             log("responseRepoDetail", responseRepoDetail)
             // 设置左上角用户名和仓库名
             self._parseRepoName(username, repoName)
-            // 清空页面 body-wrapper
-            self._clearBodyWrapper()
-            // 添加描述栏
-            self._parseDesc()
-            // 添加 commits 栏
-            self._parseGitStats()
-            // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
-            self._parseSecondaryMenu(responseRepoDetail.path, responseRepoDetail.clone_address)
-            // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
-            self._appendFilesTable(responseRepoDetail.entries, responseRepoDetail.path)
+            // 设置仓库布局类型
+            self.parseRepository(responseRepoDetail.entries.length)
+
+            if (responseRepoDetail.entries.length > 0) {
+                // 清空页面 body-wrapper
+                self._clearBodyWrapper()
+                // 添加描述栏
+                self._parseDesc()
+                // 添加 commits 栏
+                self._parseGitStats()
+                // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
+                self._parseSecondaryMenu(responseRepoDetail.path, responseRepoDetail.clone_address)
+                // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
+                self._appendFilesTable(responseRepoDetail.entries, responseRepoDetail.path)
+            } else {
+            //    说明是空仓库
+                self.initEmptyRepo(responseRepoDetail.clone_address)
+            }
         })
+    }
+    
+    static parseRepository = (length) => {
+        let repositorySel = e(`.repository`)
+        if (length > 0) {
+            repositorySel.className = 'repository file list'
+        } else {
+            repositorySel.className = 'repository quickstart'
+        }
+    }
+
+    static initEmptyRepo = (clone_address: string) => {
+        let t: string = `
+            <div class="ui grid">
+                <div class="sixteen wide column content">
+                    <h4 class="ui top attached header">
+                        Quick Guide
+                    </h4>
+                    <div class="ui attached guide table segment">
+                        <div class="item">
+                            <h3>Clone this repository 
+                                <small>Need help cloning? Visit 
+                                    <a href="http://git-scm.com/book/en/Git-Basics-Getting-a-Git-Repository" rel="nofollow">
+                                    Help
+                                    </a>
+                                    !
+                                </small>
+                            </h3>
+                            <div class="ui action small input">
+                                <button class="ui basic clone button blue" id="repo-clone-https" data-link="${clone_address}">
+                                    HTTPS
+                                </button>
+                                <button class="ui basic clone button" id="repo-clone-ssh" data-link="">
+                                    SSH
+                                </button>
+                                <input id="repo-clone-url" value="${clone_address}" readonly="">
+                                <button class="ui basic button poping up clipboard" id="clipboard-btn" data-original="Copy" data-success="Copied!" data-error="Press ⌘-C or Ctrl-C to copy" data-content="Copy" data-variation="inverted tiny" data-clipboard-target="#repo-clone-url">
+                                    <i class="octicon octicon-clippy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ui divider"></div>
+                        <div class="item">
+                            <h3>Create a new repository on the command line</h3>
+                            <div class="markdown">
+                                <pre>
+                                    <code>touch README.md
+                                        git init
+                                        git add README.md
+                                        git commit -m "first commit"
+                                        git remote add origin 
+                                        <span class="clone-url">${clone_address}</span>
+                                        git push -u origin master
+                                    </code>
+                                </pre>
+                            </div>
+                        </div>
+                        <div class="ui divider"></div>
+                        <div class="item">
+                            <h3>Push an existing repository from the command line</h3>
+                            <div class="markdown">
+                            <pre>
+                                <code>git remote add origin 
+                                    <span class="clone-url">${clone_address}</span>
+                                    git push -u origin master
+                                </code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `
+        // let girdSel: HTMLSelectElement = e(`.grid`)
+        appendHtml(this.bodyWrapperSel, t)
     }
 
     static _clearBodyWrapper = () => {
@@ -483,32 +566,6 @@ class RepoContainer {
         self._appendFilesTable(entries, path)
     }
 
-//     static bindPathSectionEvent = () => {
-//         let self = this
-//         let sel = e(`.class-ui-breadcrumb`)
-//         sel.addEventListener('click', function(event){
-//             let target = event.target as HTMLSelectElement
-//             if (target.className.includes("class-path-section")) {
-//                 let path: string = target.dataset.path
-//                 let type: EnumFileType = EnumFileType.dir
-//                 let form = {
-//                     type: type
-//                 }
-//                 // 说明访问的是主路径，不然的话就是调到上面一层目录
-//                 if (path.split('/').length == 5) {
-//                     self.initRepo()
-//                 } else {
-//                     APIContainer.repoSuffix(`${path}`, form, function (r) {
-//                         let response = JSON.parse(r)
-//                         log("response:", response.data)
-//                         let res: ResponserRepoSuffix = response.data
-//                         self.parseFilesSuffixBody(res.entries, res.path)
-//                     })
-//                 }
-//             }
-//         })
-//     }
-//
     static enterFile = (path: string, content: string) => {
         let self = this
         // 清空页面 body-wrapper
