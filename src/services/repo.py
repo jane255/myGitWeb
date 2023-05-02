@@ -5,7 +5,7 @@ import pygit2
 from git import Repo
 
 import config
-from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem
+from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, CommitsBranches
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -55,18 +55,19 @@ class ServiceRepo:
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
         # log("entries", entries)
-        latest_commit = cls.entry_latest_commit(
+        latest_commit: LatestCommitItem = cls.latest_commit(
             repo_name=repo_name,
             user_id=user.id,
             branch_name=branch_name,
             path='',
             is_dir=True,
         )
-        log("latest_commit", latest_commit)
         resp = ResponseRepoDetail(
             clone_address=clone_address,
             entries=entries,
             path=f"/{user.username}/{repo_name}/src/{branch_name}",
+            latest_commit=latest_commit.dict(),
+            commits_branches=cls.commits_and_branches(repo_name=repo_name, user_id=user.id, branch_name=branch_name),
         )
         return resp
 
@@ -257,7 +258,6 @@ class ServiceRepo:
                     suffix_type: EnumFileType) -> ResponseRepoSuffix:
         if suffix_type == EnumFileType.file.value:
             content: str = cls.file_content(repo_name=repo_name, user_id=user.id, path=suffix, branch_name=branch_name)
-            log("content", content)
             resp = ResponseRepoSuffix(
                 content=content,
             )
@@ -265,9 +265,17 @@ class ServiceRepo:
         else:
             entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, path=suffix,
                                                        branch_name=branch_name)
-            log("entries", entries)
+            # log("entries", entries)
+            latest_commit = cls.latest_commit(
+                repo_name=repo_name,
+                user_id=user.id,
+                branch_name=branch_name,
+                path=suffix,
+                is_dir=True,
+            )
             resp = ResponseRepoSuffix(
                 entries=entries,
+                latest_commit=latest_commit,
             )
             return resp
 
@@ -298,3 +306,65 @@ class ServiceRepo:
         # 假设现在只处理文本文件, 转成 utf-8 文本转回
         data = entry.data.decode('utf-8')
         return data
+
+    @classmethod
+    def latest_commit(
+            cls,
+            repo_name: str,
+            user_id: int,
+            branch_name: str,
+            path: str,
+            is_dir: bool = False,
+    ) -> LatestCommitItem:
+        commit_record = cls.entry_latest_commit(
+            repo_name=repo_name,
+            user_id=user_id,
+            branch_name=branch_name,
+            path=path,
+            is_dir=is_dir,
+        )
+        author = str(commit_record.author).strip().split()[0]
+        hash_code = commit_record.hex
+        commit_time = timestamp_to_date(commit_record.commit_time)
+        commit_message = str(commit_record.message).strip()
+        item = LatestCommitItem(
+            author=author,
+            hash_code=hash_code,
+            commit_time=commit_time,
+            commit_message=commit_message,
+        )
+        return item
+
+    @classmethod
+    def commits_and_branches(
+            cls,
+            repo_name: str,
+            user_id: int,
+            branch_name: str,
+    ) -> t.Dict:
+        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+        repo = pygit2.Repository(repo_path)
+        branch = repo.branches[branch_name]
+        #         - GIT_BRANCH_LOCAL - return all local branches (set by default)
+        #         - GIT_BRANCH_REMOTE - return all remote-tracking branches
+        #         - GIT_BRANCH_ALL - return local branches and remote-tracking branches
+        # # Listing all branches
+        # branches_list = list(repo.branches)
+        # # Local only
+        # local_branches = list(repo.branches.local)
+        # # Remote only
+        # remote_branches = list(repo.branches.remote)
+        branch_num = len(list(repo.branches))
+        commit = branch.peel()
+
+        # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
+        # walker 可以看作类似元素为 pygit2.Commit 对象的列表
+        walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
+        # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
+        commits = list(walker)
+        commit_num = len(commits)
+        cb = CommitsBranches(
+            commit_num=commit_num,
+            branch_num=branch_num,
+        )
+        return cb.dict()

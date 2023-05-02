@@ -72,11 +72,15 @@ class RepoContainer {
                 // 添加描述栏
                 self._parseDesc()
                 // 添加 commits 栏
-                self._parseGitStats()
+                self._parseGitStats(responseRepoDetail.commits_branches)
                 // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
                 self._parseSecondaryMenu(responseRepoDetail.path, responseRepoDetail.clone_address)
                 // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
-                self._appendFilesTable(responseRepoDetail.entries, responseRepoDetail.path)
+                self._appendFilesTable(
+                    responseRepoDetail.entries,
+                    responseRepoDetail.path,
+                    responseRepoDetail.latest_commit,
+                    )
             } else {
             //    说明是空仓库
                 self.initEmptyRepo(responseRepoDetail.clone_address)
@@ -188,17 +192,17 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _parseGitStats = () => {
+    static _parseGitStats = (commitsBranches: CommitsBranches) => {
         let t: string = `
             <div class="ui segment" id="git-stats">
                 <div class="ui two horizontal center link list">
                     <div class="item">
                         <a href="/haxi/gitWeb/commits/master"><span class="ui text black"><i
-                                class="octicon octicon-history"></i> <b>0</b> Commits</span> </a>
+                                class="octicon octicon-history"></i> <b>${commitsBranches.commit_num}</b> Commits</span> </a>
                     </div>
                     <div class="item">
                         <a href="/haxi/gitWeb/branches"><span class="ui text black"><i
-                                class="octicon octicon-git-branch"></i><b>1</b> Branches</span> </a>
+                                class="octicon octicon-git-branch"></i><b>${commitsBranches.branch_num }</b> Branches</span> </a>
                     </div>
                     <div class="item">
                         <a href="/haxi/gitWeb/releases"><span class="ui text black"><i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
@@ -402,11 +406,11 @@ class RepoContainer {
         appendHtml(parentSel, t)
     }
 
-    static _appendFilesTable = (entries: [], path: string) => {
+    static _appendFilesTable = (entries: [], path: string, latest_commit: LatestCommitItem) => {
         // 先添加自己，再添加子元素
         this._appendRepoFilesTable()
     //    file header，也就是最新 commit
-        this._appendFilesTableHead()
+        this._appendFilesTableHead(latest_commit)
     //    文件目录
         this._appendFilesTableBody(entries, path)
     }
@@ -419,23 +423,28 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _appendFilesTableHead = () => {
+    static _appendFilesTableHead = (latest_commit: LatestCommitItem) => {
+        let author: string = latest_commit.author
+        let hash_code: string = latest_commit.hash_code
+        let hash: string = latest_commit.hash_code.substring(0, 10)
+        let commit_message: string = latest_commit.commit_message
+        let commit_time: string = latest_commit.commit_time
         let t = `
             <thead>
                 <tr>
                     <th class="four wide">
                         <img class="ui avatar image img-12"
                              src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
-                        <a href="/haxi"><strong>haxi</strong></a>
+                        <a href="/${author}"><strong>${author}</strong></a>
                         <a rel="nofollow" class="ui sha label"
-                           href="/haxi/gitWeb/commit/b780a75d2d62d8473df9b0968238e4454245fea1">b780a75d2d</a>
-                        <span class="grey has-emoji">Add 'test1.txt'</span>
+                           href="/haxi/gitWeb/commit/${hash_code}">${hash}</a>
+                        <span class="grey has-emoji">${commit_message}</span>
                     </th>
                     <th class="nine wide">
                     </th>
                     <th class="three wide text grey right age">
                     <span class="time-since poping up" title="" data-content="Sun, 30 Apr 2023 08:03:29 UTC"
-                        data-variation="inverted tiny">6 hours ago</span>
+                        data-variation="inverted tiny">${commit_time}</span>
                     </th>
                 </tr>
             </thead>        
@@ -558,14 +567,14 @@ class RepoContainer {
         })
     }
 
-    static enterSecondaryDir = (entries: [], path: string) => {
+    static enterSecondaryDir = (entries: [], path: string, latest_commit: LatestCommitItem) => {
         let self = this
         // 清空页面 body-wrapper
         self._clearBodyWrapper()
         // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
         self._parseSecondaryMenu(path)
         // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
-        self._appendFilesTable(entries, path)
+        self._appendFilesTable(entries, path, latest_commit)
     }
 
     static enterFile = (path: string, content: string) => {
@@ -676,7 +685,7 @@ class RepoEvent {
                 let res: ResponserRepoSuffix = response.data
                 if (type === EnumFileType.dir) {
                     // 进入文件二级目录
-                    RepoContainer.enterSecondaryDir(res.entries, res.path)
+                    RepoContainer.enterSecondaryDir(res.entries, res.path, res.latest_commit)
                 } else {
                     // 解析文件
                     RepoContainer.enterFile(path, res.content)
@@ -700,7 +709,7 @@ class RepoEvent {
                 let response = JSON.parse(r)
                 log("response:", response.data)
                 let res: ResponserRepoSuffix = response.data
-                RepoContainer.enterSecondaryDir(res.entries, res.path)
+                RepoContainer.enterSecondaryDir(res.entries, res.path, res.latest_commit)
             })
         }
     }

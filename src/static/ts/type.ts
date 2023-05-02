@@ -22,11 +22,27 @@ interface ResponseRepoList {
     repo_list: ResponseRepoListItem[]
 }
 
+// 最新提交信息
+interface LatestCommitItem {
+    author: string
+    hash_code: string
+    commit_time: string
+    commit_message: string
+}
+
+// 分支数、提交数
+interface CommitsBranches {
+    commit_num: number
+    branch_num: number
+}
+
 // /detail 接口返回
 interface ResponseRepoDetail {
     clone_address: string
     entries: []
     path: string
+    latest_commit: LatestCommitItem
+    commits_branches: CommitsBranches
 }
 
 // /repo/add 接口返回
@@ -74,4 +90,5 @@ interface ResponserRepoSuffix {
     content: string
     entries: []
     path: string
+    latest_commit: LatestCommitItem
 }

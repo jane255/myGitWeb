@@ -23,11 +23,26 @@ class RepoListItem(BaseModel):
     create_time: str = Field(default=None)
 
 
+class LatestCommitItem(BaseModel):
+    author: str
+    hash_code: str
+    commit_time: str
+    commit_message: str
+
+
+# // 分支数、提交数
+class CommitsBranches(BaseModel):
+    commit_num: int
+    branch_num: int
+
+
 class ResponseRepoDetail(RepoListItem):
     """结构"""
     clone_address: str = Field(default=None)
     entries: t.List
     path: str
+    latest_commit: LatestCommitItem = Field(default=None)
+    commits_branches: CommitsBranches
 
 
 class ResponseRepoList(BaseModel):
@@ -51,13 +66,6 @@ class EnumFileType(Enum):
     file = 'file'
     dir = 'dir'
 
-
-class LatestCommitItem(BaseModel):
-    author: str
-    hash_code: str
-    commit_time: str
-    commit_message: str
-
     
 class ResponseRepoDetailFile(BaseModel):
     name: str
@@ -75,3 +83,4 @@ class ResponseRepoSuffix(BaseModel):
     content: str = Field(default=None)
     entries: t.List = Field(default=None)
     path: str = Field(default=None)
+    latest_commit: LatestCommitItem = Field(default=None)
