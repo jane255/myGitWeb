@@ -83,7 +83,7 @@ class RepoContainer {
             }
         })
     }
-    
+
     static parseRepository = (length) => {
         let repositorySel = e(`.repository`)
         if (length > 0) {
@@ -376,9 +376,11 @@ class RepoContainer {
         let parentSel: HTMLSelectElement = e(`.class-file-clone`)
         let t: string = `
             <div class="ui action small input" id="clone-panel">
-                <button class="ui basic clone button blue" id="repo-clone-https"
-                                    data-link="${cloneAddress}">
+                <button class="ui basic clone button blue" id="repo-clone-https" data-link="${cloneAddress}">
                                 HTTPS
+                </button>
+                <button class="ui basic clone button" id="repo-clone-ssh" data-link="">
+                    SSH
                 </button>
                 <input id="repo-clone-url" value="${cloneAddress}" readonly="">
                 <button class="ui basic icon button poping up clipboard" id="clipboard-btn" data-original="Copy"
