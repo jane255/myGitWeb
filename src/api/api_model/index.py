@@ -52,6 +52,13 @@ class EnumFileType(Enum):
     dir = 'dir'
 
 
+class LatestCommitItem(BaseModel):
+    author: str
+    hash_code: str
+    commit_time: str
+    commit_message: str
+
+    
 class ResponseRepoDetailFile(BaseModel):
     name: str
     path: str

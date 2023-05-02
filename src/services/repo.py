@@ -5,7 +5,7 @@ import pygit2
 from git import Repo
 
 import config
-from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix
+from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -54,7 +54,15 @@ class ServiceRepo:
     def repo_detail(cls, repo_name: str, user: User, branch_name: str = 'master') -> ResponseRepoDetail:
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
-        log("entries", entries)
+        # log("entries", entries)
+        latest_commit = cls.entry_latest_commit(
+            repo_name=repo_name,
+            user_id=user.id,
+            branch_name=branch_name,
+            path='',
+            is_dir=True,
+        )
+        log("latest_commit", latest_commit)
         resp = ResponseRepoDetail(
             clone_address=clone_address,
             entries=entries,
@@ -124,7 +132,7 @@ class ServiceRepo:
                 user_id=user_id,
                 branch_name=branch_name,
                 path=e.get("path"),
-                is_dir=False if e.get("type") == EnumFileType.file else True,
+                is_dir=False if e.get("type") == EnumFileType.file.value else True,
             )
             hash_code = commit_record.hex
             commit_time = timestamp_to_date(commit_record.commit_time)
