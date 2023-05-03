@@ -42,7 +42,7 @@ class ResponseRepoDetail(RepoListItem):
     entries: t.List
     path: str
     latest_commit: LatestCommitItem = Field(default=None)
-    commits_branches: CommitsBranches
+    commits_branches: CommitsBranches = Field(default=None)
 
 
 class ResponseRepoList(BaseModel):

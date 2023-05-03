@@ -55,20 +55,26 @@ class ServiceRepo:
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
         # log("entries", entries)
-        latest_commit: LatestCommitItem = cls.latest_commit(
-            repo_name=repo_name,
-            user_id=user.id,
-            branch_name=branch_name,
-            path='',
-            is_dir=True,
-        )
         resp = ResponseRepoDetail(
             clone_address=clone_address,
             entries=entries,
             path=f"/{user.username}/{repo_name}/src/{branch_name}",
-            latest_commit=latest_commit.dict(),
-            commits_branches=cls.commits_and_branches(repo_name=repo_name, user_id=user.id, branch_name=branch_name),
         )
+        if len(entries) > 0:
+            latest_commit: LatestCommitItem = cls.latest_commit(
+                repo_name=repo_name,
+                user_id=user.id,
+                branch_name=branch_name,
+                path='',
+                is_dir=True,
+            )
+            if latest_commit is not None:
+                resp.latest_commit = latest_commit.dict()
+            resp.commits_branches = cls.commits_and_branches(
+                repo_name=repo_name,
+                user_id=user.id,
+                branch_name=branch_name,
+            )
         return resp
 
     # 获取仓库的文件列表
@@ -114,7 +120,7 @@ class ServiceRepo:
         repo = pygit2.Repository(repo_path)
         branch = repo.branches.get(branch_name)
         # 说明是空仓库
-        if branch is None and branch_name == 'master':
+        if branch is None:
             return []
 
         commit = branch.peel()
@@ -195,10 +201,13 @@ class ServiceRepo:
             branch_name: str,
             path: str,
             is_dir: bool = False,
-    ) -> pygit2.Commit:
+    ) -> t.Optional[pygit2.Commit]:
         repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
         repo = pygit2.Repository(repo_path)
-        branch = repo.branches[branch_name]
+        branch = repo.branches.get(branch_name)
+        if branch is None:
+            return branch
+
         commit = branch.peel()
 
         # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
@@ -315,7 +324,7 @@ class ServiceRepo:
             branch_name: str,
             path: str,
             is_dir: bool = False,
-    ) -> LatestCommitItem:
+    ) -> t.Optional[LatestCommitItem]:
         commit_record = cls.entry_latest_commit(
             repo_name=repo_name,
             user_id=user_id,
@@ -323,6 +332,9 @@ class ServiceRepo:
             path=path,
             is_dir=is_dir,
         )
+        if commit_record is None:
+            return None
+
         author = str(commit_record.author).strip().split()[0]
         hash_code = commit_record.hex
         commit_time = timestamp_to_date(commit_record.commit_time)
@@ -344,7 +356,6 @@ class ServiceRepo:
     ) -> t.Dict:
         repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
         repo = pygit2.Repository(repo_path)
-        branch = repo.branches[branch_name]
         #         - GIT_BRANCH_LOCAL - return all local branches (set by default)
         #         - GIT_BRANCH_REMOTE - return all remote-tracking branches
         #         - GIT_BRANCH_ALL - return local branches and remote-tracking branches
@@ -355,14 +366,18 @@ class ServiceRepo:
         # # Remote only
         # remote_branches = list(repo.branches.remote)
         branch_num = len(list(repo.branches))
-        commit = branch.peel()
 
-        # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
-        # walker 可以看作类似元素为 pygit2.Commit 对象的列表
-        walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
-        # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
-        commits = list(walker)
-        commit_num = len(commits)
+        branch = repo.branches.get(branch_name)
+        if branch is None:
+            commit_num = 0
+        else:
+            commit = branch.peel()
+            # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
+            # walker 可以看作类似元素为 pygit2.Commit 对象的列表
+            walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
+            # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
+            commits = list(walker)
+            commit_num = len(commits)
         cb = CommitsBranches(
             commit_num=commit_num,
             branch_num=branch_num,
