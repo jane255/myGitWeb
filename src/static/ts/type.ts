@@ -9,6 +9,30 @@ interface apiForm {
     [key: string]: any
 }
 
+// ------- 下面是函数参数 ------------
+// 解析二级目录
+interface ParamsParseSecondaryMenu {
+    path: string
+    commits_branches?: CommitsBranches
+    clone_address?: string
+    displayFileButtons?: boolean
+}
+
+// 进入二级目录
+interface ParamsEnterSecondaryDir {
+    entries: []
+    path: string
+    latest_commit: LatestCommitItem
+    commits_branches: CommitsBranches
+}
+
+// 进入文件
+interface ParamsEnterFile {
+    path: string
+    content: string
+    commits_branches: CommitsBranches
+}
+
 // ------- 下面是接口文档 ------------
 
 interface ResponseRepoListItem {
@@ -34,6 +58,8 @@ interface LatestCommitItem {
 interface CommitsBranches {
     commit_num: number
     branch_num: number
+    branch_list: string[]
+    current_branch: string
 }
 
 // /detail 接口返回
@@ -91,4 +117,5 @@ interface ResponserRepoSuffix {
     entries: []
     path: string
     latest_commit: LatestCommitItem
+    commits_branches: CommitsBranches
 }

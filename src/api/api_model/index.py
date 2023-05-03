@@ -34,6 +34,8 @@ class LatestCommitItem(BaseModel):
 class CommitsBranches(BaseModel):
     commit_num: int
     branch_num: int
+    branch_list: t.List[str]
+    current_branch: str
 
 
 class ResponseRepoDetail(RepoListItem):
@@ -84,3 +86,4 @@ class ResponseRepoSuffix(BaseModel):
     entries: t.List = Field(default=None)
     path: str = Field(default=None)
     latest_commit: LatestCommitItem = Field(default=None)
+    commits_branches: CommitsBranches = Field(default=None)

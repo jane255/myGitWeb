@@ -74,7 +74,12 @@ class RepoContainer {
                 // 添加 commits 栏
                 self._parseGitStats(responseRepoDetail.commits_branches)
                 // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
-                self._parseSecondaryMenu(responseRepoDetail.path, responseRepoDetail.clone_address)
+                let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
+                    path: responseRepoDetail.path,
+                    commits_branches: responseRepoDetail.commits_branches,
+                    clone_address: responseRepoDetail.clone_address,
+                }
+                self._parseSecondaryMenu(paramsParseSecondaryMenu)
                 // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
                 self._appendFilesTable(
                     responseRepoDetail.entries,
@@ -214,17 +219,19 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _parseSecondaryMenu = (path: string, clone_address: string='', displayFileButtons=true) => {
+    static _parseSecondaryMenu = (
+        params: ParamsParseSecondaryMenu
+    ) => {
         // 先添加自己，再添加子元素
         this._appendSecondaryMenu()
         // 分支对比栏
         this._appendMenuGitCompare()
         // 分支选择栏
-        this._appendMenuGitChoose()
+        this._appendMenuGitChoose(params.path, params.commits_branches)
         // 当前目录
-        this._appendMenuCurrentDir(path)
+        this._appendMenuCurrentDir(params.path)
         // 新文件栏和克隆栏
-        this._appendMenuFileClone(clone_address, displayFileButtons)
+        this._appendMenuFileClone(params.clone_address, params.displayFileButtons)
     }
 
     static _appendSecondaryMenu = () => {
@@ -246,22 +253,40 @@ class RepoContainer {
         appendHtml(secondaryMenuSel, t)
     }
 
-    static _appendMenuGitChoose= () => {
+    static _appendMenuGitChoose= (path: string, commits_branches: CommitsBranches) => {
+        let prefix: string[] = path.split('/src')[0].split('/')
+        log("_appendMenuGitChoose ----------", prefix)
+
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
+        let branchListTemplate: string = ``
+        for (let branch of commits_branches.branch_list) {
+            let bt: string
+            if (branch == commits_branches.current_branch) {
+                bt = `
+                    <div class="item selected" data-url="/haxi/gitWeb/src/${branch}">${branch}</div>
+                `
+            } else {
+                bt = `
+                    <div class="item" data-url="/haxi/gitWeb/src/${branch}">${branch}</div>
+                `
+            }
+            branchListTemplate += bt
+        }
+
         let t: string = `
                 <div class="fitted item choose reference class-git-choose">
-                    <div class="ui floating filter dropdown" data-no-results="No results found." tabindex="0">
-                        <div class="ui basic small button">
+                    <div class="ui floating filter dropdown class-floating-filter-dropdown" data-no-results="No results found." tabindex="0">
+                        <div class="ui basic small button" data-action="visible">
                             <span class="text">
                                 <i class="octicon octicon-git-branch"></i>
                                 Branch:
-                                <strong>master</strong>
+                                <strong>${commits_branches.current_branch}</strong>
                             </span>
                             <i class="dropdown icon" tabindex="0">
                                 <div class="menu" tabindex="-1"></div>
                             </i>
                         </div>
-                        <div class="menu" tabindex="-1">
+                        <div class="menu class-floating-menu" tabindex="-1">
                             <div class="ui icon search input">
                                 <i class="filter icon"></i>
                                 <input name="search" placeholder="Filter branch or tag...">
@@ -283,7 +308,7 @@ class RepoContainer {
                                 </div>
                             </div>
                             <div id="branch-list" class="scrolling menu">
-                                <div class="item selected" data-url="/haxi/gitWeb/src/master">master</div>
+                                ${branchListTemplate}
                             </div>
                             <div id="tag-list" class="scrolling menu" style="display: none">
                             </div>
@@ -346,7 +371,7 @@ class RepoContainer {
             this._appendFileButtons()
         }
 
-        if (clone_address.length > 0) {
+        if (clone_address) {
             // 克隆
             this._appendClonePanel(clone_address)
         }
@@ -435,7 +460,7 @@ class RepoContainer {
                     <th class="four wide">
                         <img class="ui avatar image img-12"
                              src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
-                        <a href="/${author}"><strong>${author}</strong></a>
+                        <strong>${author}</strong>
                         <a rel="nofollow" class="ui sha label"
                            href="/haxi/gitWeb/commit/${hash_code}">${hash}</a>
                         <span class="grey has-emoji">${commit_message}</span>
@@ -567,24 +592,33 @@ class RepoContainer {
         })
     }
 
-    static enterSecondaryDir = (entries: [], path: string, latest_commit: LatestCommitItem) => {
+    static enterSecondaryDir = (params: ParamsEnterSecondaryDir) => {
         let self = this
         // 清空页面 body-wrapper
         self._clearBodyWrapper()
         // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
-        self._parseSecondaryMenu(path)
+        let p: ParamsParseSecondaryMenu = {
+            path: params.path,
+            commits_branches: params.commits_branches,
+        }
+        self._parseSecondaryMenu(p)
         // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
-        self._appendFilesTable(entries, path, latest_commit)
+        self._appendFilesTable(params.entries, params.path, params.latest_commit)
     }
 
-    static enterFile = (path: string, content: string) => {
+    static enterFile = (params: ParamsEnterFile) => {
         let self = this
         // 清空页面 body-wrapper
         self._clearBodyWrapper()
         // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
-        self._parseSecondaryMenu(path, '', false)
+        let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
+            path: params.path,
+            commits_branches: params.commits_branches,
+            displayFileButtons: false,
+        }
+        self._parseSecondaryMenu(paramsParseSecondaryMenu)
         // 解析文件，包括文件名栏、文件内容
-        self._parseFileContent(path, content)
+        self._parseFileContent(params.path, params.content)
     }
 
     static _parseFileContent = (path: string, content: string) => {
@@ -685,10 +719,21 @@ class RepoEvent {
                 let res: ResponserRepoSuffix = response.data
                 if (type === EnumFileType.dir) {
                     // 进入文件二级目录
-                    RepoContainer.enterSecondaryDir(res.entries, res.path, res.latest_commit)
+                    let params: ParamsEnterSecondaryDir = {
+                        entries: res.entries,
+                        path: res.path,
+                        latest_commit: res.latest_commit,
+                        commits_branches: res.commits_branches,
+                    }
+                    RepoContainer.enterSecondaryDir(params)
                 } else {
                     // 解析文件
-                    RepoContainer.enterFile(path, res.content)
+                    let params: ParamsEnterFile = {
+                        path: path,
+                        content: res.content,
+                        commits_branches: res.commits_branches,
+                    }
+                    RepoContainer.enterFile(params)
                 }
             })
         }
@@ -709,10 +754,58 @@ class RepoEvent {
                 let response = JSON.parse(r)
                 log("response:", response.data)
                 let res: ResponserRepoSuffix = response.data
-                RepoContainer.enterSecondaryDir(res.entries, res.path, res.latest_commit)
+                // 进入文件二级目录
+                    let params: ParamsEnterSecondaryDir = {
+                        entries: res.entries,
+                        path: res.path,
+                        latest_commit: res.latest_commit,
+                        commits_branches: res.commits_branches
+                    }
+                RepoContainer.enterSecondaryDir(params)
             })
         }
     }
+
+    // 监听浮动选择器
+    static visible = () => {
+        //
+        let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
+        floatingBranchSel.className += ' active visible'
+        //
+        let menuBranchSel: HTMLSelectElement = e(`.class-floating-menu`)
+        menuBranchSel.className += ' transition visible'
+        menuBranchSel.style.display = 'block !important'
+        // 设置 body 的 dataset 为 visible 状态，开始统计点击 visible 状态
+        let chooseSel = e(`body`)
+        chooseSel.dataset.visible = "0"
+        //
+    }
+
+    // 监听点击事件，假设这时候有浮动的过滤器展开了，设置为关闭
+    static bindClick = () => {
+        // bindEvent('body', 'click', function (event) {
+        //     let bodySel = e('body')
+        //     // 之所以多这一步设置为 "1" 的状态，是因为这一次监听点击跟上面的监听 visible 点击是同步发生的，所以需要多走一步
+        //     if (bodySel.dataset.visible == '0') {
+        //         bodySel.dataset.visible = "1"
+        //
+        //     } else if (e('body').dataset.visible == '1') {
+        //         // visible 设置为 -1
+        //         bodySel.dataset.visible = "-1"
+        //         // 关闭浮动器
+        //         let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
+        //         let floatingBranchClassNames: string[] = floatingBranchSel.className.split(' ')
+        //         floatingBranchSel.className = floatingBranchClassNames.splice(0, floatingBranchClassNames.length - 2).join(' ')
+        //         //
+        //         let menuBranchSel: HTMLSelectElement = e(`.class-floating-menu`)
+        //         let menuBranchSelClassNames = menuBranchSel.className.split(' ')
+        //         menuBranchSel.className = menuBranchSelClassNames.splice(0, menuBranchSelClassNames.length - 2).join(' ')
+        //         menuBranchSel.style.display = 'none'
+        //     }
+        // })
+    }
+
+
 }
 
 class ActionRepo extends Action {
@@ -720,6 +813,7 @@ class ActionRepo extends Action {
         'click': {
             'enter': RepoEvent.enter,
             'quit': RepoEvent.quit,
+            'visible': RepoEvent.visible,
         },
     }
 }

@@ -267,8 +267,14 @@ class ServiceRepo:
                     suffix_type: EnumFileType) -> ResponseRepoSuffix:
         if suffix_type == EnumFileType.file.value:
             content: str = cls.file_content(repo_name=repo_name, user_id=user.id, path=suffix, branch_name=branch_name)
+            commits_branches: t.Dict = cls.commits_and_branches(
+                repo_name=repo_name,
+                user_id=user.id,
+                branch_name=branch_name,
+            )
             resp = ResponseRepoSuffix(
                 content=content,
+                commits_branches=commits_branches,
             )
             return resp
         else:
@@ -282,9 +288,15 @@ class ServiceRepo:
                 path=suffix,
                 is_dir=True,
             )
+            commits_branches: t.Dict = cls.commits_and_branches(
+                repo_name=repo_name,
+                user_id=user.id,
+                branch_name=branch_name,
+            )
             resp = ResponseRepoSuffix(
                 entries=entries,
                 latest_commit=latest_commit,
+                commits_branches=commits_branches,
             )
             return resp
 
@@ -294,9 +306,8 @@ class ServiceRepo:
     # path: 该文件在仓库中的路径
     @classmethod
     def file_content(cls, repo_name: str, user_id: int, path: str, branch_name: str = 'master') -> str:
-        log("file_content", repo_name, user_id, path, branch_name)
+        # log("file_content", repo_name, user_id, path, branch_name)
         repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
-        log("repo_path", repo_path)
         # 通过裸仓库路径生成 Repository 对象
         repo = pygit2.Repository(repo_path)
         # 通过分支名生成 pygit2.Branch 对象, pygit2.Branch 对应在 git 中的概念是分支
@@ -379,7 +390,9 @@ class ServiceRepo:
             commits = list(walker)
             commit_num = len(commits)
         cb = CommitsBranches(
+            branch_list=list(repo.branches),
             commit_num=commit_num,
             branch_num=branch_num,
+            current_branch=branch_name,
         )
         return cb.dict()
