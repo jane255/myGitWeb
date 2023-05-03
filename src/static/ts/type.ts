@@ -9,6 +9,13 @@ interface apiForm {
     [key: string]: any
 }
 
+// 定义一个接口，包含用户名、仓库名、分支名
+interface RepoPath {
+    username: string
+    repoName: string
+    branchName: string
+}
+
 // ------- 下面是函数参数 ------------
 // 解析二级目录
 interface ParamsParseSecondaryMenu {

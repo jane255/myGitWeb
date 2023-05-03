@@ -51,13 +51,24 @@ class RepoContainer {
     }
 
     // 初始化仓库详情
-    static initRepo = () => {
+    static initRepo = (path: string='') => {
         let self = this
-        let paths = window.location.pathname.split('/')
-        let username = paths[1]
-        let repoName = paths[2]
+        let username: string
+        let repoName: string
+        let branchName: string
+        if (path.length > 0) {
+            let repoPath: RepoPath = self.repoForPath(path)
+            username = repoPath.username
+            repoName = repoPath.repoName
+            branchName = repoPath.branchName
+        } else {
+            let paths = window.location.pathname.split('/')
+            username = paths[1]
+            repoName = paths[2]
+            branchName = 'master'
+        }
         //
-        APIContainer.repoDetail(username, repoName, function (r) {
+        APIContainer.repoDetail(username, repoName, branchName, function (r) {
             let response = JSON.parse(r)
             let responseRepoDetail: ResponseRepoDetail = response.data
             log("responseRepoDetail", responseRepoDetail)
@@ -72,7 +83,7 @@ class RepoContainer {
                 // 添加描述栏
                 self._parseDesc()
                 // 添加 commits 栏
-                self._parseGitStats(responseRepoDetail.commits_branches)
+                self._parseGitStats(responseRepoDetail.path, responseRepoDetail.commits_branches)
                 // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
                 let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
                     path: responseRepoDetail.path,
@@ -91,6 +102,20 @@ class RepoContainer {
                 self.initEmptyRepo(responseRepoDetail.clone_address)
             }
         })
+    }
+
+    static repoForPath = (path: string) :RepoPath => {
+        let prefix: string[] = path.split('/src')[0].split('/')
+        let username = prefix[1]
+        let repoName = prefix[2]
+        let args: string[] = path.split('/src')[1].split('/')
+        let branchName = args[1]
+        let form: RepoPath = {
+            username: username,
+            repoName: repoName,
+            branchName: branchName
+        }
+        return form
     }
 
     static parseRepository = (length) => {
@@ -197,20 +222,25 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _parseGitStats = (commitsBranches: CommitsBranches) => {
+    static _parseGitStats = (path, commitsBranches: CommitsBranches) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
+
         let t: string = `
             <div class="ui segment" id="git-stats">
                 <div class="ui two horizontal center link list">
                     <div class="item">
-                        <a href="/haxi/gitWeb/commits/master"><span class="ui text black"><i
+                        <a href="/${username}/${repoName}/commits/${branchName}"><span class="ui text black"><i
                                 class="octicon octicon-history"></i> <b>${commitsBranches.commit_num}</b> Commits</span> </a>
                     </div>
                     <div class="item">
-                        <a href="/haxi/gitWeb/branches"><span class="ui text black"><i
+                        <a href="/${username}/${repoName}/branches"><span class="ui text black"><i
                                 class="octicon octicon-git-branch"></i><b>${commitsBranches.branch_num }</b> Branches</span> </a>
                     </div>
                     <div class="item">
-                        <a href="/haxi/gitWeb/releases"><span class="ui text black"><i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
+                        <a href="/${username}/${repoName}/releases"><span class="ui text black"><i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
                         </a>
                     </div>
                 </div>
@@ -225,13 +255,13 @@ class RepoContainer {
         // 先添加自己，再添加子元素
         this._appendSecondaryMenu()
         // 分支对比栏
-        this._appendMenuGitCompare()
+        this._appendMenuGitCompare(params.path)
         // 分支选择栏
         this._appendMenuGitChoose(params.path, params.commits_branches)
         // 当前目录
         this._appendMenuCurrentDir(params.path)
         // 新文件栏和克隆栏
-        this._appendMenuFileClone(params.clone_address, params.displayFileButtons)
+        this._appendMenuFileClone(params.path, params.clone_address, params.displayFileButtons)
     }
 
     static _appendSecondaryMenu = () => {
@@ -241,11 +271,14 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _appendMenuGitCompare= () => {
+    static _appendMenuGitCompare= (path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
         let t: string = `
             <div class="fitted item class-git-compare">
-                <a href="/haxi/gitWeb/compare/master...master">
+                <a href="/${username}/${repoName}/compare/master...master">
                     <button class="ui green small button"><i class="octicon octicon-git-compare"></i></button>
                 </a>
             </div>
@@ -254,20 +287,20 @@ class RepoContainer {
     }
 
     static _appendMenuGitChoose= (path: string, commits_branches: CommitsBranches) => {
-        let prefix: string[] = path.split('/src')[0].split('/')
-        log("_appendMenuGitChoose ----------", prefix)
-
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
         let branchListTemplate: string = ``
         for (let branch of commits_branches.branch_list) {
             let bt: string
             if (branch == commits_branches.current_branch) {
                 bt = `
-                    <div class="item selected" data-url="/haxi/gitWeb/src/${branch}">${branch}</div>
+                    <div class="item selected" data-path="/${username}/${repoName}/src/${branch}" data-action="checkout">${branch}</div>
                 `
             } else {
                 bt = `
-                    <div class="item" data-url="/haxi/gitWeb/src/${branch}">${branch}</div>
+                    <div class="item" data-path="/${username}/${repoName}/src/${branch}" data-action="checkout">${branch}</div>
                 `
             }
             branchListTemplate += bt
@@ -321,7 +354,8 @@ class RepoContainer {
 
     static _appendMenuCurrentDir= (path: string) => {
         // 设置主目录
-        let repoName: string = path.split('/src')[0].split('/')[2]
+        let repoPath: RepoPath = this.repoForPath(path)
+        let repoName: string = repoPath.repoName
         let pathPrefix = path.split('/').splice(0, 5).join('/')
         let t: string = `
             <div class="fitted item class-current-dir">
@@ -363,17 +397,17 @@ class RepoContainer {
         }
     }
 
-    static _appendMenuFileClone= (clone_address: string, displayFileButtons=true) => {
+    static _appendMenuFileClone= (path: string, clone_address: string, displayFileButtons=true) => {
         // 先添加自己，再添加子元素
         this._appendFileClone()
         // 新文件栏
         if (displayFileButtons) {
-            this._appendFileButtons()
+            this._appendFileButtons(path)
         }
 
         if (clone_address) {
             // 克隆
-            this._appendClonePanel(clone_address)
+            this._appendClonePanel(clone_address, path)
         }
     }
 
@@ -386,14 +420,18 @@ class RepoContainer {
         appendHtml(secondaryMenuSel, t)
     }
 
-    static _appendFileButtons= () => {
+    static _appendFileButtons= (path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
         let parentSel: HTMLSelectElement = e(`.class-file-clone`)
         let t: string = `
             <div id="file-buttons" class="ui tiny blue buttons">
-                <a href="/haxi/gitWeb/_new/master/" class="ui button">
+                <a href="/${username}/${repoName}/_new/${branchName}/" class="ui button">
                     New file
                 </a>
-                <a href="/haxi/gitWeb/_upload/master/" class="ui button">
+                <a href="/${username}/${repoName}/_upload/${branchName}/" class="ui button">
                     Upload file
                 </a>
             </div>
@@ -401,7 +439,11 @@ class RepoContainer {
         appendHtml(parentSel, t)
     }
 
-    static _appendClonePanel = (cloneAddress: string) => {
+    static _appendClonePanel = (cloneAddress: string, path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
         let parentSel: HTMLSelectElement = e(`.class-file-clone`)
         let t: string = `
             <div class="ui action small input" id="clone-panel">
@@ -420,9 +462,9 @@ class RepoContainer {
                 <div class="ui basic jump dropdown icon button" tabindex="0">
                     <i class="download icon"></i>
                     <div class="menu" tabindex="-1">
-                        <a class="item" href="/haxi/gitWeb/archive/master.zip"><i
+                        <a class="item" href="/${username}/${repoName}/archive/${branchName}.zip"><i
                                 class="octicon octicon-file-zip"></i> ZIP</a>
-                        <a class="item" href="/haxi/gitWeb/archive/master.tar.gz"><i
+                        <a class="item" href="/${username}/${repoName}/archive/${branchName}.tar.gz"><i
                                 class="octicon octicon-file-zip"></i> TAR.GZ</a>
                     </div>
                 </div>
@@ -435,7 +477,7 @@ class RepoContainer {
         // 先添加自己，再添加子元素
         this._appendRepoFilesTable()
     //    file header，也就是最新 commit
-        this._appendFilesTableHead(latest_commit)
+        this._appendFilesTableHead(latest_commit, path)
     //    文件目录
         this._appendFilesTableBody(entries, path)
     }
@@ -448,7 +490,10 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _appendFilesTableHead = (latest_commit: LatestCommitItem) => {
+    static _appendFilesTableHead = (latest_commit: LatestCommitItem, path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
         let author: string = latest_commit.author
         let hash_code: string = latest_commit.hash_code
         let hash: string = latest_commit.hash_code.substring(0, 10)
@@ -462,7 +507,7 @@ class RepoContainer {
                              src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
                         <strong>${author}</strong>
                         <a rel="nofollow" class="ui sha label"
-                           href="/haxi/gitWeb/commit/${hash_code}">${hash}</a>
+                           href="/${username}/${repoName}/commit/${hash_code}">${hash}</a>
                         <span class="grey has-emoji">${commit_message}</span>
                     </th>
                     <th class="nine wide">
@@ -494,7 +539,11 @@ class RepoContainer {
         this._appendFilesParent(path)
         //
         let parentSel: HTMLSelectElement = e(`.class-files-tboody`)
-        let pathname: string = window.location.pathname
+        // let pathname: string = window.location.pathname
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
         // 判断是否有 readme  文件
         let hasReadme: boolean = false
         let readmePath: string
@@ -526,11 +575,11 @@ class RepoContainer {
                     <tr>
                     <td class="name">
                         ${span}
-                        <a class="a-files-path-name" data-path="${pathname}/src/master/${_path}" data-type="${type}" data-action="enter">${name}</a>
+                        <a class="a-files-path-name" data-path="/${username}/${repoName}/src/${branchName}/${_path}" data-type="${type}" data-action="enter">${name}</a>
                     </td>
                     <td class="message collapsing has-emoji">
                         <a rel="nofollow" class="ui sha label"
-                           href="${pathname}/commit/${hashCode}">${hashCode.substring(0, 10)}</a>
+                           href="/${username}/${repoName}/commit/${hashCode}">${hashCode.substring(0, 10)}</a>
                         ${commit}
                     </td>
                     <td class="text grey right age"><span>${ct}</span></td>
@@ -541,7 +590,7 @@ class RepoContainer {
         }
         // 如果是首页并且有 readme
         if (hasReadme) {
-            this._parseReadme(readmePath)
+            this._parseReadme(path, readmePath)
         }
     }
 
@@ -561,14 +610,18 @@ class RepoContainer {
         }
     }
 
-    static _parseReadme = (readmePath: string) => {
+    static _parseReadme = (path: string, readmePath: string) => {
         // 获取 readme 文件的内容
         let form = {
             type: EnumFileType.file
         }
-        let path = window.location.pathname + `/src/master/${readmePath}`
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
+        let p = `/${username}/${repoName}/src/${branchName}/${readmePath}`
         let self = this
-        APIContainer.repoSuffix(`${path}`, form, function (r) {
+        APIContainer.repoSuffix(`${p}`, form, function (r) {
             let response = JSON.parse(r)
             log("response:", response.data)
             let res: ResponserRepoSuffix = response.data
@@ -582,7 +635,7 @@ class RepoContainer {
                     <div class="ui unstackable attached table segment">
                         <div id="" class="file-view markdown has-emoji">
     
-                            <div id="gitweb" class="anchor-wrap"><h1>${content}<a class="anchor" href="#gitweb"><span
+                            <div id="${repoName}" class="anchor-wrap"><h1>${content}<a class="anchor" href="/${username}/${repoName}"><span
                                     class="octicon octicon-link"></span></a></h1></div>
                         </div>
                     </div>
@@ -629,6 +682,10 @@ class RepoContainer {
     }
 
     static _appendFileHeader = (path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
         // 解析内容
         let filename = path.split('/').splice(-1)
         let t: string = `
@@ -639,12 +696,12 @@ class RepoContainer {
                     <span class="text grey normal">4 B</span>
                     <div class="ui right file-actions">
                         <div class="ui buttons">
-                            <a class="ui button" href="/haxi/gitWeb/src/a61c249028cd1120582f506a68bf8fecc6a3b099/test1.txt">Permalink</a>
-                            <a class="ui button" href="/haxi/gitWeb/commits/master/test1.txt">History</a>
-                            <a class="ui button" href="/haxi/gitWeb/raw/master/test1.txt">Raw</a>
+                            <a class="ui button" href="/${username}/${repoName}/src/a61c249028cd1120582f506a68bf8fecc6a3b099/${filename}">Permalink</a>
+                            <a class="ui button" href="/${username}/${repoName}/commits/${branchName}/${filename}">History</a>
+                            <a class="ui button" href="/${username}/${repoName}/raw/${branchName}/${filename}">Raw</a>
                         </div>
-                        <a href="/haxi/gitWeb/_edit/master/test1.txt"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
-                        <a href="/haxi/gitWeb/_delete/master/test1.txt"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                        <a href="/${username}/${repoName}/_edit/${branchName}/${filename}"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                        <a href="/${username}/${repoName}/_delete/${branchName}/${filename}"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
                     </div>
                </h4>
           </div>
@@ -707,7 +764,7 @@ class RepoEvent {
         let path = target.dataset.path
         // 说明访问的是主路径
         if (path.split('/').length == 5) {
-            RepoContainer.initRepo()
+            RepoContainer.initRepo(path)
         } else {
             let type = target.dataset.type
             let form = {
@@ -748,7 +805,7 @@ class RepoEvent {
         }
         // 说明访问的是主路径，不然的话就是调到上面一层目录
         if (path.split('/').length == 5) {
-            RepoContainer.initRepo()
+            RepoContainer.initRepo(path)
         } else {
             APIContainer.repoSuffix(`${path}`, form, function (r) {
                 let response = JSON.parse(r)
@@ -776,9 +833,15 @@ class RepoEvent {
         menuBranchSel.className += ' transition visible'
         menuBranchSel.style.display = 'block !important'
         // 设置 body 的 dataset 为 visible 状态，开始统计点击 visible 状态
-        let chooseSel = e(`body`)
-        chooseSel.dataset.visible = "0"
+        // let chooseSel = e(`body`)
+        // chooseSel.dataset.visible = "0"
         //
+    }
+
+    // 监听浮动选择器
+    static checkout = (target) => {
+        let path: string = target.dataset.path
+        RepoContainer.initRepo(path)
     }
 
     // 监听点击事件，假设这时候有浮动的过滤器展开了，设置为关闭
@@ -814,6 +877,7 @@ class ActionRepo extends Action {
             'enter': RepoEvent.enter,
             'quit': RepoEvent.quit,
             'visible': RepoEvent.visible,
+            'checkout': RepoEvent.checkout,
         },
     }
 }

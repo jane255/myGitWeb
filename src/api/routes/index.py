@@ -117,11 +117,11 @@ def repo(username: str, repo_name: str):
 
 
 # 仓库
-@main.route('/<username>/<repo_name>/detail', methods=['GET'])
+@main.route('/<username>/<repo_name>/src/<branch_name>', methods=['GET'])
 @login_required
-def repo_detail(username: str, repo_name: str):
+def repo_detail(username: str, repo_name: str, branch_name: str):
     user = current_user()
-    response: ResponseRepoDetail = ServiceRepo.repo_detail(repo_name=repo_name, user=user)
+    response: ResponseRepoDetail = ServiceRepo.repo_detail(repo_name=repo_name, user=user, branch_name=branch_name)
     return response.dict()
 
 

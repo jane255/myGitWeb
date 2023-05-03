@@ -31,8 +31,8 @@ class APIContainer {
         API.call(Method.Get, Path.repoList, {}, callback)
     }
 
-    static repoDetail = (username: string, repoName: string, callback: ResponseCallback) => {
-        API.call(Method.Get, `/${username}/${repoName}/detail`, {}, callback)
+    static repoDetail = (username: string, repoName: string, branchName: string, callback: ResponseCallback) => {
+        API.call(Method.Get, `/${username}/${repoName}/src/${branchName}`, {}, callback)
     }
 
     // static repoAdd = (data: apiForm, callback: ResponseCallback) => {
