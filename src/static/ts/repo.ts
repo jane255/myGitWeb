@@ -238,7 +238,7 @@ class RepoContainer {
                         <i class="octicon octicon-history"></i> <b>${commitsBranches.commit_num}</b> Commits</span> </a>
                     </div>
                     <div class="item">
-                        <a><span class="ui text black" data-path="/${username}/${repoName}/branches" data-action="branches">
+                        <a><span class="ui text black" data-path="/${username}/${repoName}/branches/overview" data-action="branches">
                         <i class="octicon octicon-git-branch"></i><b>${commitsBranches.branch_num }</b> Branches</span> </a>
                     </div>
                     <div class="item">
@@ -773,10 +773,10 @@ class RepoContainer {
     }
 
     // 进入 commits
-    static initCommits = (target) => {
+    static parseCommits = (target: HTMLSelectElement) => {
         let self = this
         let path = target.dataset.path
-        APIContainer.repoCommits(path, function (r) {
+        APIContainer.repoTarget(path, function (r) {
             let response = JSON.parse(r)
             let responseRepoCommits: ResponseRepoCommits = response.data
             log("responseRepoCommits", responseRepoCommits)
@@ -873,11 +873,130 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
+    static parseBranches = (target: HTMLSelectElement) => {
+        let self = this
+        let path = target.dataset.path
+        log("parseBranches", path)
+        APIContainer.repoBranches(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoBranches = response.data
+            log("path, resp", path, resp)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+            // 设置菜单
+            self._parseNavbar(path)
+            // 设置 default
+            self._parseDefaultBranch(resp.default, path)
+            // 设置 actives
+            self._parseActiveBranches(resp.active_list, path)
+        })
+    }
+
+    static _parseNavbar = (path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+
+        let t: string = `
+            <div class="navbar">
+                <div class="ui compact small menu">
+                    <a class=" item class-branches-overview" data-path="/${username}/${repoName}/branches/overview" data-action="branches">Overview</a>
+                    <a class=" item class-branches-all" data-path="/${username}/${repoName}/branches/all" data-action="branches">All Branches</a>
+                </div>
+            </div>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+        // 设置 active
+        let sel: HTMLSelectElement
+        // 根据路由不同设置 header
+        let header: string
+        if (path.includes('/branches/all')) {
+            sel = e(`.class-branches-all`)
+            header = `
+                <div class="ui top attached header class-all-branches">
+                    All Branches
+                </div>
+                <div class="ui attached segment list class-all-branches-list"></div>
+            `
+        } else {
+            sel = e(`.class-branches-overview`)
+            header = `
+                <div class="ui top attached header class-default-branch">
+                    Default Branch
+                </div>
+                <div class="ui attached segment list class-default-branch-list"></div>
+                <div class="ui top attached header class-active-branch">
+                    Active Branches
+                </div>
+                <div class="ui attached segment list class-active-branch-list"></div>
+            `
+        }
+        // 增加 navbar 标识
+        sel.className += ' active'
+        //
+        appendHtml(this.bodyWrapperSel, header)
+    }
+
+    static _parseDefaultBranch = (commit: BranchLatestCommit, path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+
+        let t: string = `
+            <div class="item ui grid">
+                <div class="ui eleven wide column">
+                <a class="markdown" href="/${username}/${repoName}"><code>${commit.branch_name}</code></a>
+                <span class="ui text light grey">Updated <span class="time-since poping up" title="" data-content="Mon, 01 May 2023 15:11:03 UTC" data-variation="inverted tiny">${commit.commit_time}</span> by ${commit.author}</span>
+                </div>
+                <div class="ui four wide column">
+                <a class="ui basic blue button" data-path="/${username}/${repoName}/settings/branches">Change Default Branch</a>
+                </div>
+            </div>
+        `
+        let sel: HTMLSelectElement
+        if (path.includes('/branches/all')) {
+            sel = e(`.class-all-branches-list`)
+        } else {
+            sel = e(`.class-default-branch-list`)
+        }
+        log("sel", sel)
+        appendHtml(sel, t)
+    }
+
+    static _parseActiveBranches = (activeList: BranchLatestCommit[], path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+
+        let item: string = ``
+        for (let branchLatestCommit of activeList) {
+            item += `
+                <div class="item ui grid">
+                    <div class="ui eleven wide column">
+                    <a class="markdown" href="/${username}/${repoName}"><code>${branchLatestCommit.branch_name}</code></a>
+                    <span class="ui text light grey">Updated <span class="time-since poping up" title="" data-content="Wed, 03 May 2023 01:23:25 UTC" data-variation="inverted tiny">${branchLatestCommit.commit_time}</span> by ${branchLatestCommit.author}</span>
+                    </div>
+                    
+                    <div class="ui four wide column">
+                    <a class="ui basic button" href="/${username}/${repoName}/compare/master...${branchLatestCommit.branch_name}"><i class="octicon octicon-git-pull-request"></i> New Pull Request</a>
+                    </div>
+                </div>
+            `
+        }
+        let sel: HTMLSelectElement
+        if (path.includes('/branches/all')) {
+            sel = e(`.class-all-branches-list`)
+        } else {
+            sel = e(`.class-active-branch-list`)
+        }
+        log("sel", sel)
+        appendHtml(sel, item)
+    }
 }
 
 class RepoEvent {
 
-    static enter = (target) => {
+    static enter = (target: HTMLSelectElement) => {
         log("enter click path --- ", target)
         let path = target.dataset.path
         // 说明访问的是主路径
@@ -914,7 +1033,7 @@ class RepoEvent {
         }
     }
 
-    static quit = (target) => {
+    static quit = (target: HTMLSelectElement) => {
         log("quit click path --- ", target)
         let path: string = target.dataset.path
         let type: EnumFileType = EnumFileType.dir
@@ -957,8 +1076,17 @@ class RepoEvent {
     }
 
     // 监听浮动选择器
-    static checkout = (target) => {
-        this.enter(target)
+    static checkout = (target: HTMLSelectElement) => {
+        log("checkout click path --- ", target)
+        let path: string = target.dataset.path
+        let arg: string = path.split('/')[3]
+        if (arg === 'src') {
+            this.enter(target)
+        } else if (arg === 'commits') {
+            RepoContainer.parseCommits(target)
+        } else if (arg === 'branches') {
+            RepoContainer.parseBranches(target)
+        }
     }
 
     // 监听点击事件，假设这时候有浮动的过滤器展开了，设置为关闭
@@ -993,7 +1121,8 @@ class ActionRepo extends Action {
             'quit': RepoEvent.quit,
             'visible': RepoEvent.visible,
             'checkout': RepoEvent.checkout,
-            'commits': RepoContainer.initCommits,
+            'commits': RepoContainer.parseCommits,
+            'branches': RepoContainer.parseBranches,
         },
     }
 }

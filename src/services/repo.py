@@ -6,7 +6,7 @@ from git import Repo
 
 import config
 from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, CommitsBranches, \
-    ResponseRepoCommits
+    ResponseRepoCommits, BranchLatestCommit, ResponseRepoBranches
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -52,7 +52,7 @@ class ServiceRepo:
         return path
 
     @classmethod
-    def repo_detail(cls, repo_name: str, user: User, branch_name: str = 'master') -> ResponseRepoDetail:
+    def repo_detail(cls, repo_name: str, user: User, branch_name: str) -> ResponseRepoDetail:
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
         # log("entries", entries)
@@ -76,7 +76,7 @@ class ServiceRepo:
                 user_id=user.id,
                 branch_name=branch_name,
             )
-        return resp
+        return resp.dict()
 
     # 获取仓库的文件列表
     # path: 裸仓库路径
@@ -406,9 +406,10 @@ class ServiceRepo:
     def commit_list(
             cls,
             repo_name: str,
-            user_id: int,
+            user: User,
             branch_name: str,
     ) -> t.Dict:
+        user_id = user.id
         repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
         repo = pygit2.Repository(repo_path)
         branch = repo.branches.get(branch_name)
@@ -435,5 +436,38 @@ class ServiceRepo:
         resp = ResponseRepoCommits(
             commit_list=result,
             commits_branches=commits_branches,
+        )
+        return resp.dict()
+
+    @classmethod
+    def branch_list(
+            cls,
+            repo_name: str,
+            user: User,
+    ) -> t.Dict:
+        user_id = user.id
+        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+        repo = pygit2.Repository(repo_path)
+        branches = list(repo.branches)
+
+        branch_commit_dict = dict()
+        for b in branches:
+            commit = cls.latest_commit(
+                repo_name=repo_name,
+                user_id=user.id,
+                branch_name=b,
+                path='',
+                is_dir=True,
+            ).dict()
+            commit['branch_name'] = b
+            branch_commit_dict[b] = commit
+
+        master = 'master'
+        default = branch_commit_dict.pop(master)
+        active_list = list(branch_commit_dict.values())
+
+        resp = ResponseRepoBranches(
+            default=default,
+            active_list=active_list,
         )
         return resp.dict()

@@ -94,3 +94,14 @@ class ResponseRepoCommits(BaseModel):
     """结构"""
     commit_list: t.List[LatestCommitItem]
     commits_branches: CommitsBranches = Field(default=None)
+
+
+class BranchLatestCommit(LatestCommitItem):
+    branch_name: str
+
+
+# /repo/branches
+class ResponseRepoBranches(BaseModel):
+    """结构"""
+    default: BranchLatestCommit
+    active_list: t.List[BranchLatestCommit]

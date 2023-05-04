@@ -122,8 +122,17 @@ def repo(username: str, repo_name: str):
 @login_required
 def repo_detail(username: str, repo_name: str, branch_name: str):
     user = current_user()
-    response: ResponseRepoDetail = ServiceRepo.repo_detail(repo_name=repo_name, user=user, branch_name=branch_name)
-    return response.dict()
+    response = ServiceRepo.repo_detail(repo_name=repo_name, user=user, branch_name=branch_name)
+    return response
+
+
+# 仓库
+@main.route('/<username>/<repo_name>/commits/<branch_name>', methods=['GET'])
+@login_required
+def repo_commits(username: str, repo_name: str, branch_name: str):
+    user = current_user()
+    response = ServiceRepo.commit_list(repo_name=repo_name, user=user, branch_name=branch_name)
+    return response
 
 
 # 仓库路径
@@ -139,10 +148,10 @@ def repo_suffix(username: str, repo_name: str, branch_name: str, suffix):
     return response.dict()
 
 
-# commits
-@main.route('/<username>/<repo_name>/commits/<branch_name>', methods=['GET'])
+# 仓库
+@main.route('/<username>/<repo_name>/branches/<event>', methods=['GET'])
 @login_required
-def repo_commits(username: str, repo_name: str, branch_name: str):
+def repo_branches(username: str, repo_name: str, event: str):
     user = current_user()
-    response: t.Dict = ServiceRepo.commit_list(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
+    response = ServiceRepo.branch_list(repo_name=repo_name, user=user)
     return response
