@@ -5,7 +5,8 @@ import pygit2
 from git import Repo
 
 import config
-from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, CommitsBranches
+from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, CommitsBranches, \
+    ResponseRepoCommits
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -345,18 +346,8 @@ class ServiceRepo:
         )
         if commit_record is None:
             return None
-
-        author = str(commit_record.author).strip().split()[0]
-        hash_code = commit_record.hex
-        commit_time = timestamp_to_date(commit_record.commit_time)
-        commit_message = str(commit_record.message).strip()
-        item = LatestCommitItem(
-            author=author,
-            hash_code=hash_code,
-            commit_time=commit_time,
-            commit_message=commit_message,
-        )
-        return item
+        commit_item = cls.get_commit_item(commit_record)
+        return commit_item
 
     @classmethod
     def commits_and_branches(
@@ -396,3 +387,53 @@ class ServiceRepo:
             current_branch=branch_name,
         )
         return cb.dict()
+
+    @staticmethod
+    def get_commit_item(commit_record: pygit2.Commit) -> LatestCommitItem:
+        author = str(commit_record.author).strip().split()[0]
+        hash_code = commit_record.hex
+        commit_time = timestamp_to_date(commit_record.commit_time)
+        commit_message = str(commit_record.message).strip()
+        item = LatestCommitItem(
+            author=author,
+            hash_code=hash_code,
+            commit_time=commit_time,
+            commit_message=commit_message,
+        )
+        return item
+
+    @classmethod
+    def commit_list(
+            cls,
+            repo_name: str,
+            user_id: int,
+            branch_name: str,
+    ) -> t.Dict:
+        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+        repo = pygit2.Repository(repo_path)
+        branch = repo.branches.get(branch_name)
+
+        result = []
+        if branch is None:
+            return dict(commit_list=[])
+
+        commit = branch.peel()
+        # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
+        # walker 可以看作类似元素为 pygit2.Commit 对象的列表
+        walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
+        # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
+        commits = list(walker)
+        for commit_record in commits:
+            item = cls.get_commit_item(commit_record)
+            result.append(item.dict())
+
+        commits_branches: t.Dict = cls.commits_and_branches(
+            repo_name=repo_name,
+            user_id=user_id,
+            branch_name=branch_name,
+        )
+        resp = ResponseRepoCommits(
+            commit_list=result,
+            commits_branches=commits_branches,
+        )
+        return resp.dict()

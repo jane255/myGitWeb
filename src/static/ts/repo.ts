@@ -105,11 +105,13 @@ class RepoContainer {
     }
 
     static repoForPath = (path: string) :RepoPath => {
-        let prefix: string[] = path.split('/src')[0].split('/')
+        let arg: string = path.split('/')[3]
+        let path_list = path.split(`/${arg}`)
+        let prefix: string[] = path_list[0].split('/')
         let username = prefix[1]
         let repoName = prefix[2]
-        let args: string[] = path.split('/src')[1].split('/')
-        let branchName = args[1]
+        let suffix_list: string[] = path_list[1].split('/')
+        let branchName = suffix_list[1]
         let form: RepoPath = {
             username: username,
             repoName: repoName,
@@ -232,15 +234,16 @@ class RepoContainer {
             <div class="ui segment" id="git-stats">
                 <div class="ui two horizontal center link list">
                     <div class="item">
-                        <a href="/${username}/${repoName}/commits/${branchName}"><span class="ui text black"><i
-                                class="octicon octicon-history"></i> <b>${commitsBranches.commit_num}</b> Commits</span> </a>
+                        <a><span class="ui text black" data-path="/${username}/${repoName}/commits/${branchName}" data-action="commits">
+                        <i class="octicon octicon-history"></i> <b>${commitsBranches.commit_num}</b> Commits</span> </a>
                     </div>
                     <div class="item">
-                        <a href="/${username}/${repoName}/branches"><span class="ui text black"><i
-                                class="octicon octicon-git-branch"></i><b>${commitsBranches.branch_num }</b> Branches</span> </a>
+                        <a><span class="ui text black" data-path="/${username}/${repoName}/branches" data-action="branches">
+                        <i class="octicon octicon-git-branch"></i><b>${commitsBranches.branch_num }</b> Branches</span> </a>
                     </div>
                     <div class="item">
-                        <a href="/${username}/${repoName}/releases"><span class="ui text black"><i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
+                        <a><span class="ui text black" data-path="/${username}/${repoName}/releases" data-action="releases">
+                        <i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
                         </a>
                     </div>
                 </div>
@@ -290,17 +293,30 @@ class RepoContainer {
         let repoPath: RepoPath = this.repoForPath(path)
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
+
+        let arg: string = path.split('/')[3]
+        let pathList: string[] = path.split(`/${arg}/${branchName}`)
+        let pathSuffix: string = pathList[pathList.length - 1]
+        let type: string
+        let pathSuffixList: string[] = pathSuffix.split('/')
+        if (pathSuffixList[pathSuffixList.length - 1].includes('.')) {
+            type = EnumFileType.file
+        } else {
+            type = EnumFileType.dir
+        }
+
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
         let branchListTemplate: string = ``
         for (let branch of commits_branches.branch_list) {
             let bt: string
             if (branch == commits_branches.current_branch) {
                 bt = `
-                    <div class="item selected" data-path="/${username}/${repoName}/src/${branch}" data-action="checkout">${branch}</div>
+                    <div class="item selected" data-path="/${username}/${repoName}/${arg}/${branch}${pathSuffix}" data-type="${type}" data-action="checkout">${branch}</div>
                 `
             } else {
                 bt = `
-                    <div class="item" data-path="/${username}/${repoName}/src/${branch}" data-action="checkout">${branch}</div>
+                    <div class="item" data-path="/${username}/${repoName}/${arg}/${branch}${pathSuffix}" data-type="${type}" data-action="checkout">${branch}</div>
                 `
             }
             branchListTemplate += bt
@@ -755,6 +771,108 @@ class RepoContainer {
             liSel.innerText = contentList[i]
         }
     }
+
+    // 进入 commits
+    static initCommits = (target) => {
+        let self = this
+        let path = target.dataset.path
+        APIContainer.repoCommits(path, function (r) {
+            let response = JSON.parse(r)
+            let responseRepoCommits: ResponseRepoCommits = response.data
+            log("responseRepoCommits", responseRepoCommits)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+            // 添加二级菜单，包括分支栏
+            let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
+                path: path,
+                commits_branches: responseRepoCommits.commits_branches,
+            }
+            self._parseCommitsSecondaryMenu(paramsParseSecondaryMenu)
+            // 添加commit
+            self._parseCommitsTable(path, responseRepoCommits.commit_list)
+        })
+    }
+
+    static _parseCommitsSecondaryMenu = (
+        params: ParamsParseSecondaryMenu
+    ) => {
+        // 先添加自己，再添加子元素
+        this._appendSecondaryMenu()
+        // 分支选择栏
+        this._appendMenuGitChoose(params.path, params.commits_branches)
+        this._appendCommitHeader(params.path)
+    }
+
+    static _appendCommitHeader = (path: string) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
+        let arg: string = path.split('/')[3]
+        let t = `
+            <h4 class="ui top attached header">
+                Commit History
+                <div class="ui right">
+                <form action="/${username}/${repoName}/${arg}/${branchName}/search">
+                    <div class="ui tiny search input">
+                        <input name="q" placeholder="Search commits" value="" autofocus="">
+                    </div>
+                <button class="ui black tiny button" data-panel="#add-deploy-key-panel">Find</button>
+                </form>
+                </div>
+        
+            </h4>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+    }
+
+    static _parseCommitsTable = (path: string, commit_list: LatestCommitItem[]) => {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let branchName: string = repoPath.branchName
+        let arg: string = path.split('/')[3]
+        let tr: string = ``
+        for (let item of commit_list) {
+            tr += `
+                <tr>
+                    <td class="author">
+                        <img class="ui avatar image" src="https://secure.gravatar.com/avatar/9477f6251d8aa33b64fb64f6a7c377d0?d=identicon" alt="">
+                        ${item.author}
+                    </td>
+                    <td class="message collapsing">
+                        <a rel="nofollow" class="ui sha label" data-path="/${username}/${repoName}/${arg}/${item.hash_code}">
+                        ${item.hash_code.substring(0, 10)}
+                        </a>
+                        <span class=" has-emoji">${item.commit_message}</span>
+                    </td>
+                    <td class="grey text right aligned">
+                        <span class="time-since poping up" title="" data-content="Mon, 01 May 2023 15:11:03 UTC" data-variation="inverted tiny">
+                        ${item.commit_time}
+                        </span>
+                    </td>
+                </tr>
+            `
+        }
+        let t = `
+            <div class="ui unstackable attached table segment">
+            <table id="commits-table" class="ui unstackable very basic striped fixed table single line">
+                <thead>
+                    <tr>
+                        <th class="four wide">Author</th>
+                        <th class="nine wide message"><span class="sha">SHA1</span> Message</th>
+                        <th class="three wide right aligned">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tr}
+                </tbody>
+            </table>
+            </div>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+    }
+
 }
 
 class RepoEvent {
@@ -840,8 +958,7 @@ class RepoEvent {
 
     // 监听浮动选择器
     static checkout = (target) => {
-        let path: string = target.dataset.path
-        RepoContainer.initRepo(path)
+        this.enter(target)
     }
 
     // 监听点击事件，假设这时候有浮动的过滤器展开了，设置为关闭
@@ -867,8 +984,6 @@ class RepoEvent {
         //     }
         // })
     }
-
-
 }
 
 class ActionRepo extends Action {
@@ -878,6 +993,7 @@ class ActionRepo extends Action {
             'quit': RepoEvent.quit,
             'visible': RepoEvent.visible,
             'checkout': RepoEvent.checkout,
+            'commits': RepoContainer.initCommits,
         },
     }
 }

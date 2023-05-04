@@ -47,4 +47,7 @@ class APIContainer {
         API.call(Method.Post, `${path}`, data, callback)
     }
 
+    static repoCommits = (path: string, callback: ResponseCallback) => {
+        API.call(Method.Get, `${path}`, {}, callback)
+    }
 }

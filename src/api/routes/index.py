@@ -1,3 +1,4 @@
+import typing as t
 from flask import (
     Blueprint,
     redirect,
@@ -5,7 +6,7 @@ from flask import (
 )
 from flask_httpauth import HTTPBasicAuth
 
-from api.api_model.index import ResponseRepoDetail, ResponseRepoSuffix
+from api.api_model.index import ResponseRepoDetail, ResponseRepoSuffix, ResponseRepoCommits
 from api.routes import login_required, current_user, get_request_json
 from models.user import User
 from services.handle import ServiceRepoHandle
@@ -125,6 +126,7 @@ def repo_detail(username: str, repo_name: str, branch_name: str):
     return response.dict()
 
 
+# 仓库路径
 @main.route('/<username>/<repo_name>/src/<branch_name>/<path:suffix>', methods=['POST'])
 @login_required
 def repo_suffix(username: str, repo_name: str, branch_name: str, suffix):
@@ -135,3 +137,12 @@ def repo_suffix(username: str, repo_name: str, branch_name: str, suffix):
         repo_name=repo_name, user=user, branch_name=branch_name, suffix=suffix, suffix_type=suffix_type)
     response.path = request.path
     return response.dict()
+
+
+# commits
+@main.route('/<username>/<repo_name>/commits/<branch_name>', methods=['GET'])
+@login_required
+def repo_commits(username: str, repo_name: str, branch_name: str):
+    user = current_user()
+    response: t.Dict = ServiceRepo.commit_list(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
+    return response

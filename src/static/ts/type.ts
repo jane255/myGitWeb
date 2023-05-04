@@ -126,3 +126,8 @@ interface ResponserRepoSuffix {
     latest_commit: LatestCommitItem
     commits_branches: CommitsBranches
 }
+
+interface ResponseRepoCommits {
+    commit_list: LatestCommitItem[]
+    commits_branches: CommitsBranches
+}

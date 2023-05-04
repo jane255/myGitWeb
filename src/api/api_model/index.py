@@ -68,7 +68,7 @@ class EnumFileType(Enum):
     file = 'file'
     dir = 'dir'
 
-    
+
 class ResponseRepoDetailFile(BaseModel):
     name: str
     path: str
@@ -86,4 +86,11 @@ class ResponseRepoSuffix(BaseModel):
     entries: t.List = Field(default=None)
     path: str = Field(default=None)
     latest_commit: LatestCommitItem = Field(default=None)
+    commits_branches: CommitsBranches = Field(default=None)
+
+
+# /repo/commits
+class ResponseRepoCommits(BaseModel):
+    """结构"""
+    commit_list: t.List[LatestCommitItem]
     commits_branches: CommitsBranches = Field(default=None)
