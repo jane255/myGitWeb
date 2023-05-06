@@ -52,7 +52,7 @@ class ServiceRepo:
         return path
 
     @classmethod
-    def repo_detail(cls, repo_name: str, user: User, branch_name: str) -> ResponseRepoDetail:
+    def repo_detail(cls, repo_name: str, user: User, branch_name: str) -> t.Dict:
         clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
         entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
         # log("entries", entries)
