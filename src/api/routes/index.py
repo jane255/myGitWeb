@@ -6,8 +6,7 @@ from flask import (
 from flask_httpauth import HTTPBasicAuth
 
 from api.api_model.enum import EnumCheckoutType
-from api.api_model.index import ResponseRepoSuffix
-from api.routes import login_required, current_user, get_request_json
+from api.routes import login_required, current_user
 from models.user import User
 from services.handle import ServiceRepoHandle
 from services.repo import ServiceRepo
@@ -153,25 +152,12 @@ def repo_detail(username: str, repo_name: str):
     return response
 
 
-# # 仓库路径
-# @main.route('/<username>/<repo_name>/src/<branch_name>/<path:suffix>', methods=['POST'])
-# @login_required
-# def repo_suffix(username: str, repo_name: str, branch_name: str, suffix):
-#     form = get_request_json()
-#     suffix_type = form.get('type')
-#     user = current_user()
-#     response: ResponseRepoSuffix = ServiceRepo.repo_suffix(
-#         repo_name=repo_name, user=user, branch_name=branch_name, suffix=suffix, suffix_type=suffix_type)
-#     response.path = request.path
-#     return response.dict()
-
-
 # 仓库 分支 列表
 @main.route('/<username>/<repo_name>/branches/<event>', methods=['GET'])
 @login_required
 def repo_branches(username: str, repo_name: str, event: str):
     user = current_user()
-    response = ServiceRepo.branch_list(repo_name=repo_name, user=user)
+    response = ServiceRepo.repo_branches(repo_name=repo_name, user=user)
     return response
 
 

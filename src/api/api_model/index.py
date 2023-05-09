@@ -100,7 +100,7 @@ class ResponseRepoCommits(BaseModel):
 
 
 class BranchLatestCommit(LatestCommitItem):
-    branch_name: str
+    checkout_name: str
 
 
 # /repo/branches

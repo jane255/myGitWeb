@@ -19,8 +19,9 @@ enum EnumCheckoutType {
 interface RepoPath {
     username: string
     repoName: string
-    checkoutName: string
-    checkoutType: string
+    target: string
+    checkoutName?: string
+    checkoutType?: string
     path: string
     suffix?: string
     suffixType?: string
@@ -130,7 +131,15 @@ interface ResponserRepoSuffix {
     repo_overview: RepoOverview
 }
 
+interface BranchLatestCommit extends LatestCommitItem {
+    checkout_name: string
+}
 
+// /repo/branches
+interface ResponseRepoBranches {
+    default: BranchLatestCommit
+    active_list: BranchLatestCommit[]
+}
 
 
 
@@ -146,12 +155,3 @@ interface ResponseRepoAdd extends ResponseRepoListItem{
     result: boolean
 }
 
-interface BranchLatestCommit extends LatestCommitItem {
-    branch_name: string
-}
-
-// /repo/branches
-interface ResponseRepoBranches {
-    default: BranchLatestCommit
-    active_list: BranchLatestCommit[]
-}

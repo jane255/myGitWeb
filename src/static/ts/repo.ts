@@ -100,35 +100,44 @@ class RepoContainer {
             path = `/${pathnameList[1]}/${pathnameList[2]}/src?checkoutType=branch&checkoutName=master`
         }
         // 切割路由和参数
-        let pathList: string[] = path.split('?')
+        let pathList: string[]
+        if (path.includes('?')) {
+            pathList = path.split('?')
+        } else {
+            pathList = [path]
+        }
         //
         let prefix: string[] = pathList[0].split('/')
         let username = prefix[1]
         let repoName = prefix[2]
+        let target = prefix[3]
         //
         let checkoutName: string = ``
         let checkoutType: string = ``
         let suffix: string
         let suffixType: string
-        for (let ele of pathList[1].split('&')) {
-            let param: string[] = ele.split('=')
-            let key: string = param[0]
-            let value: string = param[1]
-            if (key === 'checkoutName') {
-                checkoutName = value
-            } else if (key === 'checkoutType') {
-                checkoutType = value
-            } else if (key === 'suffix') {
-                suffix = value
-            } else if (key === 'suffixType') {
-                suffixType = value
+        if (path.includes('?')) {
+            for (let ele of pathList[1].split('&')) {
+                let param: string[] = ele.split('=')
+                let key: string = param[0]
+                let value: string = param[1]
+                if (key === 'checkoutName') {
+                    checkoutName = value
+                } else if (key === 'checkoutType') {
+                    checkoutType = value
+                } else if (key === 'suffix') {
+                    suffix = value
+                } else if (key === 'suffixType') {
+                    suffixType = value
+                }
             }
         }
 
-        path = `/${username}/${repoName}/src?checkoutType=${checkoutType}&checkoutName=${checkoutName}`
+        path = `/${username}/${repoName}/${target}?checkoutType=${checkoutType}&checkoutName=${checkoutName}`
         let repo: RepoPath = {
             username: username,
             repoName: repoName,
+            target: target,
             checkoutName: checkoutName.length > 0 ? checkoutName : 'master',
             checkoutType: checkoutType.length > 0 ? checkoutType : EnumCheckoutType.branch,
             path: path,
@@ -143,9 +152,10 @@ class RepoContainer {
     static pathForRepo = (repoPath: RepoPath) :string => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
+        let target: string = repoPath.target
         let checkoutName: string = repoPath.checkoutName
         let checkoutType: string = repoPath.checkoutType
-        let path = `/${username}/${repoName}/src?checkoutType=${checkoutType}&checkoutName=${checkoutName}`
+        let path = `/${username}/${repoName}/${target}?checkoutType=${checkoutType}&checkoutName=${checkoutName}`
         if (repoPath.suffix !== undefined) {
             path += `&suffix=${repoPath.suffix}`
         }
@@ -964,20 +974,19 @@ class RepoContainer {
         APIContainer.repoBranches(path, function (r) {
             let response = JSON.parse(r)
             let resp: ResponseRepoBranches = response.data
-            log("path, resp", path, resp)
+            let repoPath: RepoPath = self.repoForPath(path)
             // 清空页面 body-wrapper
             self._clearBodyWrapper()
             // 设置菜单
-            self._parseNavbar(path)
+            self._parseNavbar(repoPath, path)
             // 设置 default
-            self._parseDefaultBranch(resp.default, path)
+            self._parseDefaultBranch(resp.default, repoPath, path)
             // 设置 actives
-            self._parseActiveBranches(resp.active_list, path)
+            self._parseActiveBranches(resp.active_list, repoPath, path)
         })
     }
 
-    static _parseNavbar = (path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _parseNavbar = (repoPath: RepoPath, path: string) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
 
@@ -1021,15 +1030,14 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, header)
     }
 
-    static _parseDefaultBranch = (commit: BranchLatestCommit, path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _parseDefaultBranch = (commit: BranchLatestCommit, repoPath: RepoPath, path: string) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
 
         let t: string = `
             <div class="item ui grid">
                 <div class="ui eleven wide column">
-                <a class="markdown" href="/${username}/${repoName}"><code>${commit.branch_name}</code></a>
+                <a class="markdown" href="/${username}/${repoName}"><code>${commit.checkout_name}</code></a>
                 <span class="ui text light grey">Updated <span class="time-since poping up" title="" data-content="Mon, 01 May 2023 15:11:03 UTC" data-variation="inverted tiny">${commit.commit_time}</span> by ${commit.author}</span>
                 </div>
                 <div class="ui four wide column">
@@ -1046,8 +1054,7 @@ class RepoContainer {
         appendHtml(sel, t)
     }
 
-    static _parseActiveBranches = (activeList: BranchLatestCommit[], path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _parseActiveBranches = (activeList: BranchLatestCommit[], repoPath: RepoPath, path: string) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
 
@@ -1056,12 +1063,11 @@ class RepoContainer {
             item += `
                 <div class="item ui grid">
                     <div class="ui eleven wide column">
-                    <a class="markdown" href="/${username}/${repoName}"><code>${branchLatestCommit.branch_name}</code></a>
-                    <span class="ui text light grey">Updated <span class="time-since poping up" title="" data-content="Wed, 03 May 2023 01:23:25 UTC" data-variation="inverted tiny">${branchLatestCommit.commit_time}</span> by ${branchLatestCommit.author}</span>
+                    <a class="markdown" href="/${username}/${repoName}"><code>${branchLatestCommit.checkout_name}<span class="ui text light grey">Updated <span class="time-since poping up" title="" data-content="Wed, 03 May 2023 01:23:25 UTC" data-variation="inverted tiny">${branchLatestCommit.commit_time}</span> by ${branchLatestCommit.author}</span>
                     </div>
                     
                     <div class="ui four wide column">
-                    <a class="ui basic button" href="/${username}/${repoName}/compare/master...${branchLatestCommit.branch_name}"><i class="octicon octicon-git-pull-request"></i> New Pull Request</a>
+                    <a class="ui basic button" href="/${username}/${repoName}/compare/master...${branchLatestCommit.checkout_name}"><i class="octicon octicon-git-pull-request"></i> New Pull Request</a>
                     </div>
                 </div>
             `
@@ -1198,8 +1204,8 @@ class ActionRepo extends Action {
             'quit': RepoEvent.quit,
             'visible': RepoEvent.visible,
             'checkout': RepoEvent.checkout,
-            // 'commits': RepoContainer.parseCommits,
-            // 'branches': RepoContainer.parseBranches,
+            'commits': RepoContainer.parseCommits,
+            'branches': RepoContainer.parseBranches,
         },
     }
 }
