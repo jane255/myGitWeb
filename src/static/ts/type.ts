@@ -9,35 +9,44 @@ interface apiForm {
     [key: string]: any
 }
 
-// 定义一个接口，包含用户名、仓库名、分支名
+// ------- 下面是函数参数 ------------
+enum EnumCheckoutType {
+    branch = 'branch',
+    tag = 'tag',
+}
+
+// 定义一个接口，包含用户名、仓库名、分支名、commit 类型
 interface RepoPath {
     username: string
     repoName: string
-    branchName: string
+    checkoutName: string
+    checkoutType: string
+    path: string
+    suffix?: string
+    suffixType?: string
 }
 
-// ------- 下面是函数参数 ------------
 // 解析二级目录
 interface ParamsParseSecondaryMenu {
-    path: string
-    commits_branches?: CommitsBranches
-    clone_address?: string
+    repoPath: RepoPath
+    repoOverview?: RepoOverview
+    cloneAddress?: string
     displayFileButtons?: boolean
 }
 
 // 进入二级目录
 interface ParamsEnterSecondaryDir {
+    repoPath: RepoPath
     entries: []
-    path: string
     latest_commit: LatestCommitItem
-    commits_branches: CommitsBranches
+    repo_overview: RepoOverview
 }
 
 // 进入文件
 interface ParamsEnterFile {
-    path: string
+    repoPath: RepoPath
     content: string
-    commits_branches: CommitsBranches
+    repo_overview: RepoOverview
 }
 
 // ------- 下面是接口文档 ------------
@@ -61,33 +70,26 @@ interface LatestCommitItem {
     commit_message: string
 }
 
-// 分支数、提交数
-interface CommitsBranches {
-    commit_num: number
-    branch_num: number
+// 分支数、提交数、发布数
+interface RepoStats {
+    commits: number
+    branches: number
+    releases: number
+}
+
+// 分支数、提交数、发布数
+interface RepoOverview {
     branch_list: string[]
-    current_branch: string
-}
-
-// /detail 接口返回
-interface ResponseRepoDetail {
+    tag_list: string[]
+    current_checkout_type: string
+    current_checkout_name: string
     clone_address: string
-    entries: []
-    path: string
-    latest_commit: LatestCommitItem
-    commits_branches: CommitsBranches
-}
-
-// /repo/add 接口返回
-interface ResponseRepoAdd extends ResponseRepoListItem{
-    result: boolean
 }
 
 enum EnumFileType {
     file = 'file',
     dir = 'dir',
 }
-
 
 interface ResponseRepoDetailFile {
     name: string
@@ -98,39 +100,50 @@ interface ResponseRepoDetailFile {
     commit_message: string
 }
 
-
 interface ResponseRepoDetailDir extends ResponseRepoDetailFile {
     files: []
 }
 
-// login api request param
-interface RequestLogin {
-    username: string
-    password: string
+// /detail 接口返回
+interface ResponseRepoDetail {
+    // # 统计数据
+    repo_stats: RepoStats
+    // # 二级菜单
+    repo_overview: RepoOverview
+    // # 最新 commit
+    latest_commit: LatestCommitItem
+    // # 文件夹
+    entries:[]
 }
 
-interface ResponseLogin {
-    result: boolean
-}
-
-// repo/** api request param
-interface RequestRepoSuffix {
-    type: string
+// /repo/commits
+interface ResponseRepoCommits {
+    commit_list: LatestCommitItem[]
+    repo_overview: RepoOverview
 }
 
 // repo/** api responser param
 interface ResponserRepoSuffix {
     content: string
     entries: []
-    path: string
     latest_commit: LatestCommitItem
-    commits_branches: CommitsBranches
+    repo_overview: RepoOverview
 }
 
-// /repo/commits
-interface ResponseRepoCommits {
-    commit_list: LatestCommitItem[]
-    commits_branches: CommitsBranches
+
+
+
+
+
+
+
+
+
+
+
+// /repo/add 接口返回
+interface ResponseRepoAdd extends ResponseRepoListItem{
+    result: boolean
 }
 
 interface BranchLatestCommit extends LatestCommitItem {

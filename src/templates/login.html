@@ -6,13 +6,13 @@
 </head>
 <body>
     <h1>登录</h1>
-    <div>
+    <form action="/login" method="post" onsubmit="return LoginContainer.validateParam()">
         <input class="input-username" type="text" name="username" placeholder="请输入用户名">
         <br>
         <input class="input-password" type="text" name="password" placeholder="请输入密码">
         <br>
-        <button class="class-button-login" data-action="click">登录</button>
-    </div>
+        <button class="class-button-login" type="submit">登录</button>
+    </form>
 
     <!-- 工具 -->
     <script src="../static/compileJs/utils.js"></script>

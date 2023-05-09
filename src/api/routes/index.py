@@ -1,4 +1,3 @@
-import typing as t
 from flask import (
     Blueprint,
     redirect,
@@ -6,7 +5,8 @@ from flask import (
 )
 from flask_httpauth import HTTPBasicAuth
 
-from api.api_model.index import ResponseRepoDetail, ResponseRepoSuffix, ResponseRepoCommits
+from api.api_model.enum import EnumCheckoutType
+from api.api_model.index import ResponseRepoSuffix
 from api.routes import login_required, current_user, get_request_json
 from models.user import User
 from services.handle import ServiceRepoHandle
@@ -35,7 +35,7 @@ def get_avatar_list():
 
 @main.route("/login", methods=['POST'])
 def login():
-    form = get_request_json()
+    form = request.form
     log("login form", form)
     u = User.validate_login(form)
     if u is None:
@@ -67,6 +67,8 @@ def myself(username: str):
     )
 
 
+# ------------------------
+# git 请求相关
 @auth.verify_password
 def verify_password(username, password):
     log("verify_password", username, password)
@@ -110,48 +112,83 @@ def repos_process_pack_receive(username: str, repo_name: str):
     return response
 
 
-# 仓库
+# ------------------------
+# 以下是仓库相关接口
+
+# 仓库主页
 @main.route('/<username>/<repo_name>', methods=['GET'])
 @login_required
 def repo(username: str, repo_name: str):
     return render_template('repo.html')
 
 
-# 仓库
-@main.route('/<username>/<repo_name>/src/<branch_name>', methods=['GET'])
+# 仓库主页详情数据
+@main.route('/<username>/<repo_name>/src', methods=['GET'])
 @login_required
-def repo_detail(username: str, repo_name: str, branch_name: str):
+def repo_detail(username: str, repo_name: str):
     user = current_user()
-    response = ServiceRepo.repo_detail(repo_name=repo_name, user=user, branch_name=branch_name)
+    # 切换类型，branch、tag
+    checkout_type = request.args.get('checkoutType', EnumCheckoutType.branch.value)
+    # 切换名
+    checkout_name = request.args.get('checkoutName', 'master')
+    # 检查是否有 suffix
+    if 'suffix' in request.args:
+        suffix = request.args.get('suffix')
+        suffix_type = request.args.get('suffixType')
+        response = ServiceRepo.repo_suffix(
+            repo_name=repo_name,
+            user=user,
+            checkout_type=checkout_type,
+            checkout_name=checkout_name,
+            suffix=suffix,
+            suffix_type=suffix_type,
+        )
+    else:
+        response = ServiceRepo.repo_detail(
+            repo_name=repo_name,
+            user=user,
+            checkout_type=checkout_type,
+            checkout_name=checkout_name,
+        )
     return response
 
 
-# 仓库
-@main.route('/<username>/<repo_name>/commits/<branch_name>', methods=['GET'])
-@login_required
-def repo_commits(username: str, repo_name: str, branch_name: str):
-    user = current_user()
-    response = ServiceRepo.commit_list(repo_name=repo_name, user=user, branch_name=branch_name)
-    return response
+# # 仓库路径
+# @main.route('/<username>/<repo_name>/src/<branch_name>/<path:suffix>', methods=['POST'])
+# @login_required
+# def repo_suffix(username: str, repo_name: str, branch_name: str, suffix):
+#     form = get_request_json()
+#     suffix_type = form.get('type')
+#     user = current_user()
+#     response: ResponseRepoSuffix = ServiceRepo.repo_suffix(
+#         repo_name=repo_name, user=user, branch_name=branch_name, suffix=suffix, suffix_type=suffix_type)
+#     response.path = request.path
+#     return response.dict()
 
 
-# 仓库路径
-@main.route('/<username>/<repo_name>/src/<branch_name>/<path:suffix>', methods=['POST'])
-@login_required
-def repo_suffix(username: str, repo_name: str, branch_name: str, suffix):
-    form = get_request_json()
-    suffix_type = form.get('type')
-    user = current_user()
-    response: ResponseRepoSuffix = ServiceRepo.repo_suffix(
-        repo_name=repo_name, user=user, branch_name=branch_name, suffix=suffix, suffix_type=suffix_type)
-    response.path = request.path
-    return response.dict()
-
-
-# 仓库
+# 仓库 分支 列表
 @main.route('/<username>/<repo_name>/branches/<event>', methods=['GET'])
 @login_required
 def repo_branches(username: str, repo_name: str, event: str):
     user = current_user()
     response = ServiceRepo.branch_list(repo_name=repo_name, user=user)
+    return response
+
+
+# 仓库 commit 列表
+@main.route('/<username>/<repo_name>/commits', methods=['GET'])
+@login_required
+def repo_commits(username: str, repo_name: str):
+    user = current_user()
+    # 切换类型，branch、tag
+    checkout_type = request.args.get('checkoutType', EnumCheckoutType.branch.value)
+    # 切换名
+    checkout_name = request.args.get('checkoutName', 'master')
+
+    response = ServiceRepo.repo_commits(
+        repo_name=repo_name,
+        user=user,
+        checkout_type=checkout_type,
+        checkout_name=checkout_name,
+    )
     return response

@@ -1,14 +1,14 @@
 class RepoContainer {
     static bodyWrapperSel: HTMLSelectElement = e(`.body-wrapper`)
 
-    // 首页 -- 初始化仓库列表
+    // -------- 首页初始化仓库列表
     static initRepoList = () => {
         let self = this
         let username = window.location.pathname.substring(1)
         let usernameSel = e(`.class-username`)
         usernameSel.innerText = username
         //
-        APIContainer.repoList(username, function (r) {
+        APIContainer.repoList(function (r) {
             let response = JSON.parse(r)
             let respRepoList: ResponseRepoList = response.data
             // 解析仓库列表
@@ -50,25 +50,16 @@ class RepoContainer {
         return t
     }
 
-    // 初始化仓库详情
+    // -------- 初始化仓库详情
     static initRepo = (path: string='') => {
         let self = this
-        let username: string
-        let repoName: string
-        let branchName: string
-        if (path.length > 0) {
-            let repoPath: RepoPath = self.repoForPath(path)
-            username = repoPath.username
-            repoName = repoPath.repoName
-            branchName = repoPath.branchName
-        } else {
-            let paths = window.location.pathname.split('/')
-            username = paths[1]
-            repoName = paths[2]
-            branchName = 'master'
-        }
         //
-        APIContainer.repoDetail(username, repoName, branchName, function (r) {
+        let repoPath: RepoPath = this.repoForPath(path)
+        let username = repoPath.username
+        let repoName = repoPath.repoName
+        let url = repoPath.path
+        //
+        APIContainer.repoTarget(url, function (r) {
             let response = JSON.parse(r)
             let responseRepoDetail: ResponseRepoDetail = response.data
             log("responseRepoDetail", responseRepoDetail)
@@ -76,48 +67,92 @@ class RepoContainer {
             self._parseRepoName(username, repoName)
             // 设置仓库布局类型
             self.parseRepository(responseRepoDetail.entries.length)
-
+            // 假设仓库有文件夹
             if (responseRepoDetail.entries.length > 0) {
                 // 清空页面 body-wrapper
                 self._clearBodyWrapper()
                 // 添加描述栏
                 self._parseDesc()
                 // 添加 commits 栏
-                self._parseGitStats(responseRepoDetail.path, responseRepoDetail.commits_branches)
+                self._parseGitStats(repoPath, responseRepoDetail.repo_stats)
                 // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
                 let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
-                    path: responseRepoDetail.path,
-                    commits_branches: responseRepoDetail.commits_branches,
-                    clone_address: responseRepoDetail.clone_address,
+                    repoPath: repoPath,
+                    repoOverview: responseRepoDetail.repo_overview,
                 }
                 self._parseSecondaryMenu(paramsParseSecondaryMenu)
                 // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
                 self._appendFilesTable(
                     responseRepoDetail.entries,
-                    responseRepoDetail.path,
+                    repoPath,
                     responseRepoDetail.latest_commit,
                     )
             } else {
             //    说明是空仓库
-                self.initEmptyRepo(responseRepoDetail.clone_address)
+                self.initEmptyRepo(responseRepoDetail.repo_overview)
             }
         })
     }
 
     static repoForPath = (path: string) :RepoPath => {
-        let arg: string = path.split('/')[3]
-        let path_list = path.split(`/${arg}`)
-        let prefix: string[] = path_list[0].split('/')
+        if (path.length === 0) {
+            let pathnameList: string[] = window.location.pathname.split('/')
+            path = `/${pathnameList[1]}/${pathnameList[2]}/src?checkoutType=branch&checkoutName=master`
+        }
+        // 切割路由和参数
+        let pathList: string[] = path.split('?')
+        //
+        let prefix: string[] = pathList[0].split('/')
         let username = prefix[1]
         let repoName = prefix[2]
-        let suffix_list: string[] = path_list[1].split('/')
-        let branchName = suffix_list[1]
-        let form: RepoPath = {
+        //
+        let checkoutName: string = ``
+        let checkoutType: string = ``
+        let suffix: string
+        let suffixType: string
+        for (let ele of pathList[1].split('&')) {
+            let param: string[] = ele.split('=')
+            let key: string = param[0]
+            let value: string = param[1]
+            if (key === 'checkoutName') {
+                checkoutName = value
+            } else if (key === 'checkoutType') {
+                checkoutType = value
+            } else if (key === 'suffix') {
+                suffix = value
+            } else if (key === 'suffixType') {
+                suffixType = value
+            }
+        }
+
+        path = `/${username}/${repoName}/src?checkoutType=${checkoutType}&checkoutName=${checkoutName}`
+        let repo: RepoPath = {
             username: username,
             repoName: repoName,
-            branchName: branchName
+            checkoutName: checkoutName.length > 0 ? checkoutName : 'master',
+            checkoutType: checkoutType.length > 0 ? checkoutType : EnumCheckoutType.branch,
+            path: path,
         }
-        return form
+        if (suffix != null) {
+            repo.suffix = suffix
+            repo.suffixType = suffixType
+        }
+        return repo
+    }
+
+    static pathForRepo = (repoPath: RepoPath) :string => {
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let checkoutName: string = repoPath.checkoutName
+        let checkoutType: string = repoPath.checkoutType
+        let path = `/${username}/${repoName}/src?checkoutType=${checkoutType}&checkoutName=${checkoutName}`
+        if (repoPath.suffix !== undefined) {
+            path += `&suffix=${repoPath.suffix}`
+        }
+        if (repoPath.suffixType !== undefined) {
+            path += `&suffixType=${repoPath.suffixType}`
+        }
+        return path
     }
 
     static parseRepository = (length) => {
@@ -129,7 +164,8 @@ class RepoContainer {
         }
     }
 
-    static initEmptyRepo = (clone_address: string) => {
+    static initEmptyRepo = (repoOverview: RepoOverview) => {
+        let clone_address: string = repoOverview.clone_address
         let t: string = `
             <div class="ui grid">
                 <div class="sixteen wide column content">
@@ -224,26 +260,26 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _parseGitStats = (path, commitsBranches: CommitsBranches) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _parseGitStats = (repoPath: RepoPath, commitsBranches: RepoStats) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
+        let checkoutName: string = repoPath.checkoutName
+        let checkoutType: string = repoPath.checkoutType
 
         let t: string = `
             <div class="ui segment" id="git-stats">
                 <div class="ui two horizontal center link list">
                     <div class="item">
-                        <a><span class="ui text black" data-path="/${username}/${repoName}/commits/${branchName}" data-action="commits">
-                        <i class="octicon octicon-history"></i> <b>${commitsBranches.commit_num}</b> Commits</span> </a>
+                        <a><span class="ui text black" data-path="/${username}/${repoName}/commits?checkoutName=${checkoutName}&checkoutType=${checkoutType}" data-action="commits">
+                        <i class="octicon octicon-history"></i> <b>${commitsBranches.commits}</b> Commits</span> </a>
                     </div>
                     <div class="item">
                         <a><span class="ui text black" data-path="/${username}/${repoName}/branches/overview" data-action="branches">
-                        <i class="octicon octicon-git-branch"></i><b>${commitsBranches.branch_num }</b> Branches</span> </a>
+                        <i class="octicon octicon-git-branch"></i><b>${commitsBranches.branches }</b> Branches</span> </a>
                     </div>
                     <div class="item">
                         <a><span class="ui text black" data-path="/${username}/${repoName}/releases" data-action="releases">
-                        <i class="octicon octicon-tag"></i> <b>0</b> Releases</span>
+                        <i class="octicon octicon-tag"></i> <b>${commitsBranches.releases }</b> Releases</span>
                         </a>
                     </div>
                 </div>
@@ -258,13 +294,13 @@ class RepoContainer {
         // 先添加自己，再添加子元素
         this._appendSecondaryMenu()
         // 分支对比栏
-        this._appendMenuGitCompare(params.path)
+        this._appendMenuGitCompare(params.repoPath)
         // 分支选择栏
-        this._appendMenuGitChoose(params.path, params.commits_branches)
+        this._appendMenuGitChoose(params.repoPath, params.repoOverview)
         // 当前目录
-        this._appendMenuCurrentDir(params.path)
+        this._appendMenuCurrentDir(params.repoPath)
         // 新文件栏和克隆栏
-        this._appendMenuFileClone(params.path, params.clone_address, params.displayFileButtons)
+        this._appendMenuFileClone(params.repoPath, params.repoOverview, params.displayFileButtons)
     }
 
     static _appendSecondaryMenu = () => {
@@ -274,14 +310,14 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _appendMenuGitCompare= (path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _appendMenuGitCompare= (repoPath: RepoPath) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
+        let checkoutName: string = repoPath.checkoutName
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
         let t: string = `
             <div class="fitted item class-git-compare">
-                <a href="/${username}/${repoName}/compare/master...master">
+                <a href="/${username}/${repoName}/compare/master...${checkoutName}">
                     <button class="ui green small button"><i class="octicon octicon-git-compare"></i></button>
                 </a>
             </div>
@@ -289,37 +325,80 @@ class RepoContainer {
         appendHtml(secondaryMenuSel, t)
     }
 
-    static _appendMenuGitChoose= (path: string, commits_branches: CommitsBranches) => {
-        let repoPath: RepoPath = this.repoForPath(path)
-        let username: string = repoPath.username
-        let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
-
-        let arg: string = path.split('/')[3]
-        let pathList: string[] = path.split(`/${arg}/${branchName}`)
-        let pathSuffix: string = pathList[pathList.length - 1]
-        let type: string
-        let pathSuffixList: string[] = pathSuffix.split('/')
-        if (pathSuffixList[pathSuffixList.length - 1].includes('.')) {
-            type = EnumFileType.file
-        } else {
-            type = EnumFileType.dir
-        }
-
+    static _appendMenuGitChoose= (repoPath: RepoPath, repoOverview: RepoOverview) => {
+        // let username: string = repoPath.username
+        // let repoName: string = repoPath.repoName
+        // let checkoutName: string = repoPath.checkoutName
+        //
+        // let path = repoPath.path
+        // let arg: string = path.split('/')[3]
+        // // let pathList: string[] = path.split(`/${arg}/${checkoutName}`)
+        // // let pathSuffix: string = pathList[pathList.length - 1]
+        // // let type: string
+        // // let pathSuffixList: string[] = pathSuffix.split('/')
+        // // if (pathSuffixList[pathSuffixList.length - 1].includes('.')) {
+        // //     type = EnumFileType.file
+        // // } else {
+        // //     type = EnumFileType.dir
+        // // }
+        let self = this
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
+
+        // add current
+        let currentText: string
+        if (repoOverview.current_checkout_type == EnumCheckoutType.branch) {
+            currentText = `
+                <span class="text">
+                    <i class="octicon octicon-git-branch"></i>
+                    Branch:
+                    <strong>${repoOverview.current_checkout_name}</strong>
+                </span>
+            `
+        } else {
+            currentText = `
+                <span class="text">
+                    <i class="octicon octicon-git-branch"></i>
+                    Tree:
+                    <strong>${repoOverview.current_checkout_name}</span>
+            `
+        }
+        // add branch list
         let branchListTemplate: string = ``
-        for (let branch of commits_branches.branch_list) {
+        for (let branch of repoOverview.branch_list) {
             let bt: string
-            if (branch == commits_branches.current_branch) {
+            let r = {...repoPath}
+            r.checkoutType = EnumCheckoutType.branch
+            r.checkoutName = branch
+            let dataPath: string = self.pathForRepo(r)
+            if (branch == repoOverview.current_checkout_name) {
                 bt = `
-                    <div class="item selected" data-path="/${username}/${repoName}/${arg}/${branch}${pathSuffix}" data-type="${type}" data-action="checkout">${branch}</div>
+                    <div class="item selected" data-path="${dataPath}" data-action="checkout">${branch}</div>
                 `
             } else {
                 bt = `
-                    <div class="item" data-path="/${username}/${repoName}/${arg}/${branch}${pathSuffix}" data-type="${type}" data-action="checkout">${branch}</div>
+                    <div class="item" data-path="${dataPath}" data-action="checkout">${branch}</div>
                 `
             }
             branchListTemplate += bt
+        }
+        // add tags list
+        let tagListTemplate: string = ``
+        for (let tag of repoOverview.tag_list) {
+            let tt = ``
+            let r = {...repoPath}
+            r.checkoutType = EnumCheckoutType.tag
+            r.checkoutName = tag
+            let dataPath: string = self.pathForRepo(r)
+            if (tag == repoOverview.current_checkout_name) {
+                tt = `
+                    <div class="item selected" data-path="${dataPath}" data-action="checkout">${tag}</div>
+                `
+            } else {
+                tt = `
+                    <div class="item" data-path="${dataPath}" data-action="checkout">${tag}</div>
+                `
+            }
+            tagListTemplate += tt
         }
 
         let t: string = `
@@ -327,9 +406,7 @@ class RepoContainer {
                     <div class="ui floating filter dropdown class-floating-filter-dropdown" data-no-results="No results found." tabindex="0">
                         <div class="ui basic small button" data-action="visible">
                             <span class="text">
-                                <i class="octicon octicon-git-branch"></i>
-                                Branch:
-                                <strong>${commits_branches.current_branch}</strong>
+                                ${currentText}
                             </span>
                             <i class="dropdown icon" tabindex="0">
                                 <div class="menu" tabindex="-1"></div>
@@ -359,71 +436,78 @@ class RepoContainer {
                             <div id="branch-list" class="scrolling menu">
                                 ${branchListTemplate}
                             </div>
-                            <div id="tag-list" class="scrolling menu" style="display: none">
+                            <div id="tag-list" class="scrolling menu">
+                                ${tagListTemplate}
                             </div>
                         </div>
                     </div>
                 </div>
         `
         appendHtml(secondaryMenuSel, t)
+        // 设置隐藏
+        let sel = repoOverview.current_checkout_type == EnumCheckoutType.branch ? e(`#tag-list`) : e(`#branch-list`)
+        sel.style.display = 'none'
     }
 
-    static _appendMenuCurrentDir= (path: string) => {
+    static _appendMenuCurrentDir= (repoPath: RepoPath) => {
         // 设置主目录
-        let repoPath: RepoPath = this.repoForPath(path)
         let repoName: string = repoPath.repoName
-        let pathPrefix = path.split('/').splice(0, 5).join('/')
+        let path: string = repoPath.path
         let t: string = `
             <div class="fitted item class-current-dir">
                 <div class="ui breadcrumb class-ui-breadcrumb">
-                    <a class="section class-path-section" data-path="${pathPrefix}" data-action="quit">${repoName}</a>
+                    <a class="section class-path-section" data-path="${path}" data-action="quit">${repoName}</a>
                 </div>
             </div>
         `
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
         appendHtml(secondaryMenuSel, t)
         // 配置剩下目录
-        this._parseFilesPath(path)
+        this._parseFilesPath(repoPath)
     }
 
-    static _parseFilesPath = (path: string) => {
-        // 解析路径，假设路径是 /gua/axe/src/master/bala
-        // ['', 'gua', 'axe', 'src', 'master', 'bala']
-        let pathPrefix = path.split('/').splice(0, 5).join('/')
-        let pathSuffixList = path.split('/').splice(5)
-        let length = pathSuffixList.length
-        let sel = e(`.class-ui-breadcrumb`)
-        for (let i = 0; i < length; i++) {
-            let t: string
-            let p: string = pathSuffixList[i]
-            pathPrefix += '/' + p
-            if (i + 1 == length) {
-                t = `
-                    <div class="divider"> / </div>
-                    <span class="active section class-path-section">${p}</span>
-                `
-            } else {
-                t = `
-                    <div class="divider"> / </div>
-                    <span class="section class-path-section">
-                    <a data-path="${pathPrefix}" data-action="quit">${p}</a></span>
-                `
+    static _parseFilesPath = (repoPath: RepoPath) => {
+        let self = this
+        if (repoPath.suffix !== undefined) {
+            let pathSuffixList: string[] = repoPath.suffix.split('/')
+            let length: number = pathSuffixList.length
+            let sel: HTMLSelectElement = e(`.class-ui-breadcrumb`)
+            let suffix: string = ``
+            for (let i = 0; i < length; i++) {
+                let t: string
+                let p: string = pathSuffixList[i]
+                suffix += `/${p}`
+                let r: RepoPath = repoPath
+                r.suffix = suffix
+                let dataPath = self.pathForRepo(r)
+                if (i + 1 == length) {
+                    t = `
+                        <div class="divider"> / </div>
+                        <span class="active section class-path-section">${p}</span>
+                    `
+                } else {
+                    t = `
+                        <div class="divider"> / </div>
+                        <span class="section class-path-section">
+                        <a data-path="${dataPath}" data-action="quit">${p}</a></span>
+                    `
+                }
+                appendHtml(sel, t)
             }
-            appendHtml(sel, t)
         }
     }
 
-    static _appendMenuFileClone= (path: string, clone_address: string, displayFileButtons=true) => {
+    static _appendMenuFileClone= (repoPath: RepoPath, repoOverview: RepoOverview, displayFileButtons=true) => {
         // 先添加自己，再添加子元素
         this._appendFileClone()
         // 新文件栏
         if (displayFileButtons) {
-            this._appendFileButtons(path)
+            this._appendFileButtons(repoPath)
         }
 
-        if (clone_address) {
+        if (repoOverview.clone_address) {
             // 克隆
-            this._appendClonePanel(clone_address, path)
+            this._appendClonePanel(repoPath, repoOverview)
         }
     }
 
@@ -436,18 +520,17 @@ class RepoContainer {
         appendHtml(secondaryMenuSel, t)
     }
 
-    static _appendFileButtons= (path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _appendFileButtons= (repoPath: RepoPath) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
+        let checkoutName: string = repoPath.checkoutName
         let parentSel: HTMLSelectElement = e(`.class-file-clone`)
         let t: string = `
             <div id="file-buttons" class="ui tiny blue buttons">
-                <a href="/${username}/${repoName}/_new/${branchName}/" class="ui button">
+                <a href="/${username}/${repoName}/_new/${checkoutName}/" class="ui button">
                     New file
                 </a>
-                <a href="/${username}/${repoName}/_upload/${branchName}/" class="ui button">
+                <a href="/${username}/${repoName}/_upload/${checkoutName}/" class="ui button">
                     Upload file
                 </a>
             </div>
@@ -455,11 +538,11 @@ class RepoContainer {
         appendHtml(parentSel, t)
     }
 
-    static _appendClonePanel = (cloneAddress: string, path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _appendClonePanel = (repoPath: RepoPath, repoOverview: RepoOverview) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
+        let checkoutName: string = repoPath.checkoutName
+        let cloneAddress: string = repoOverview.clone_address
         let parentSel: HTMLSelectElement = e(`.class-file-clone`)
         let t: string = `
             <div class="ui action small input" id="clone-panel">
@@ -478,9 +561,9 @@ class RepoContainer {
                 <div class="ui basic jump dropdown icon button" tabindex="0">
                     <i class="download icon"></i>
                     <div class="menu" tabindex="-1">
-                        <a class="item" href="/${username}/${repoName}/archive/${branchName}.zip"><i
+                        <a class="item" href="/${username}/${repoName}/archive/${checkoutName}.zip"><i
                                 class="octicon octicon-file-zip"></i> ZIP</a>
-                        <a class="item" href="/${username}/${repoName}/archive/${branchName}.tar.gz"><i
+                        <a class="item" href="/${username}/${repoName}/archive/${checkoutName}.tar.gz"><i
                                 class="octicon octicon-file-zip"></i> TAR.GZ</a>
                     </div>
                 </div>
@@ -489,13 +572,13 @@ class RepoContainer {
         appendHtml(parentSel, t)
     }
 
-    static _appendFilesTable = (entries: [], path: string, latest_commit: LatestCommitItem) => {
+    static _appendFilesTable = (entries: [], repoPath: RepoPath, latest_commit: LatestCommitItem) => {
         // 先添加自己，再添加子元素
         this._appendRepoFilesTable()
     //    file header，也就是最新 commit
-        this._appendFilesTableHead(latest_commit, path)
+        this._appendFilesTableHead(latest_commit, repoPath)
     //    文件目录
-        this._appendFilesTableBody(entries, path)
+        this._appendFilesTableBody(entries, repoPath)
     }
 
     static _appendRepoFilesTable = () => {
@@ -506,8 +589,7 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _appendFilesTableHead = (latest_commit: LatestCommitItem, path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _appendFilesTableHead = (latest_commit: LatestCommitItem, repoPath: RepoPath) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
         let author: string = latest_commit.author
@@ -539,7 +621,7 @@ class RepoContainer {
         appendHtml(parentSel, t)
     }
 
-    static _appendFilesTableBody = (entries: [], path: string='') => {
+    static _appendFilesTableBody = (entries: [], repoPath: RepoPath) => {
         // 先添加自己，再添加文件目录
         let t: string = `
             <tbody class="class-files-tboody"></tbody>
@@ -547,19 +629,17 @@ class RepoContainer {
         let parentSel: HTMLSelectElement = e(`#repo-files-table`)
         appendHtml(parentSel, t)
         //
-        this._appendFiles(entries, path)
+        this._appendFiles(entries, repoPath)
     }
 
-    static _appendFiles = (entries: [], path: string='') => {
+    static _appendFiles = (entries: [], repoPath: RepoPath) => {
+        let self = this
         // 如果当前目录是二级目录，需要添加父目录层
-        this._appendFilesParent(path)
+        this._appendFilesParent(repoPath)
         //
         let parentSel: HTMLSelectElement = e(`.class-files-tboody`)
-        // let pathname: string = window.location.pathname
-        let repoPath: RepoPath = this.repoForPath(path)
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
         // 判断是否有 readme  文件
         let hasReadme: boolean = false
         let readmePath: string
@@ -586,12 +666,17 @@ class RepoContainer {
                     <span class="octicon octicon-file-text"></span>
                 `
             }
+            // 获取 data-path
+            let r = {...repoPath}
+            r.suffixType = type
+            r.suffix = _path
+            let dataPath: string = self.pathForRepo(r)
             let t: string = `
                 <tbody class="class-files-tboody">
                     <tr>
                     <td class="name">
                         ${span}
-                        <a class="a-files-path-name" data-path="/${username}/${repoName}/src/${branchName}/${_path}" data-type="${type}" data-action="enter">${name}</a>
+                        <a class="a-files-path-name" data-path="${dataPath}" data-action="enter">${name}</a>
                     </td>
                     <td class="message collapsing has-emoji">
                         <a rel="nofollow" class="ui sha label"
@@ -606,38 +691,39 @@ class RepoContainer {
         }
         // 如果是首页并且有 readme
         if (hasReadme) {
-            this._parseReadme(path, readmePath)
+            this._parseReadme(repoPath, readmePath)
         }
     }
 
-    static _appendFilesParent = (path: string) => {
-        if (path.split('/').length > 5) {
+    static _appendFilesParent = (repoPath: RepoPath) => {
+        let self = this
+        if (repoPath.suffix !== undefined) {
             let parentSel: HTMLSelectElement = e(`.class-files-tboody`)
-            let pathArray = path.split('/')
-            let pathParent = pathArray.splice(0, pathArray.length - 1).join('/')
+            let pathArray: string[] = repoPath.suffix.split('/')
+            repoPath.suffix = pathArray.splice(0, pathArray.length - 1).join('/')
+            repoPath.suffixType = EnumFileType.dir
+            let dataPath: string = self.pathForRepo(repoPath)
             let t: string = `
                 <tr class="has-parent">
                     <td colspan="3">
                     <i class="octicon octicon-mail-reply"></i>
-                    <a class="a-files-path-name" data-path="${pathParent}" data-action="enter">..</a></td>
+                    <a class="a-files-path-name" data-path="${dataPath}" data-action="enter">..</a></td>
                 </tr>
             `
             prependHtml(parentSel, t)
         }
     }
 
-    static _parseReadme = (path: string, readmePath: string) => {
+    static _parseReadme = (repoPath: RepoPath, readmePath: string) => {
         // 获取 readme 文件的内容
-        let form = {
-            type: EnumFileType.file
-        }
-        let repoPath: RepoPath = this.repoForPath(path)
-        let username: string = repoPath.username
-        let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
-        let p = `/${username}/${repoName}/src/${branchName}/${readmePath}`
+        let r = {...repoPath}
+        r.suffix = readmePath
+        r.suffixType = EnumFileType.file
         let self = this
-        APIContainer.repoSuffix(`${p}`, form, function (r) {
+        let path = self.pathForRepo(r)
+        let repoName = r.repoName
+        let username = r.username
+        APIContainer.repoTarget(`${path}`, function (r) {
             let response = JSON.parse(r)
             log("response:", response.data)
             let res: ResponserRepoSuffix = response.data
@@ -667,12 +753,12 @@ class RepoContainer {
         self._clearBodyWrapper()
         // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
         let p: ParamsParseSecondaryMenu = {
-            path: params.path,
-            commits_branches: params.commits_branches,
+            repoPath: params.repoPath,
+            repoOverview: params.repo_overview,
         }
         self._parseSecondaryMenu(p)
         // 解析文件，包括最新 commit 栏、文件目录栏、readme.md 栏位
-        self._appendFilesTable(params.entries, params.path, params.latest_commit)
+        self._appendFilesTable(params.entries, params.repoPath, params.latest_commit)
     }
 
     static enterFile = (params: ParamsEnterFile) => {
@@ -681,29 +767,28 @@ class RepoContainer {
         self._clearBodyWrapper()
         // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
         let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
-            path: params.path,
-            commits_branches: params.commits_branches,
+            repoPath: params.repoPath,
+            repoOverview: params.repo_overview,
             displayFileButtons: false,
         }
         self._parseSecondaryMenu(paramsParseSecondaryMenu)
         // 解析文件，包括文件名栏、文件内容
-        self._parseFileContent(params.path, params.content)
+        self._parseFileContent(params.repoPath, params.content)
     }
 
-    static _parseFileContent = (path: string, content: string) => {
+    static _parseFileContent = (repoPath: RepoPath, content: string) => {
         // 增加文件名栏
-        this._appendFileHeader(path)
+        this._appendFileHeader(repoPath)
         // 填充内容
         this.fillFileContent(content)
     }
 
-    static _appendFileHeader = (path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _appendFileHeader = (repoPath: RepoPath) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
+        let checkoutName: string = repoPath.checkoutName
         // 解析内容
-        let filename = path.split('/').splice(-1)
+        let filename = repoPath.suffix.split('/').splice(-1)
         let t: string = `
             <div id="file-content" class="tab-size-8">
                 <h4 class="ui top attached header" id="repo-read-file">
@@ -713,11 +798,11 @@ class RepoContainer {
                     <div class="ui right file-actions">
                         <div class="ui buttons">
                             <a class="ui button" href="/${username}/${repoName}/src/a61c249028cd1120582f506a68bf8fecc6a3b099/${filename}">Permalink</a>
-                            <a class="ui button" href="/${username}/${repoName}/commits/${branchName}/${filename}">History</a>
-                            <a class="ui button" href="/${username}/${repoName}/raw/${branchName}/${filename}">Raw</a>
+                            <a class="ui button" href="/${username}/${repoName}/commits/${checkoutName}/${filename}">History</a>
+                            <a class="ui button" href="/${username}/${repoName}/raw/${checkoutName}/${filename}">Raw</a>
                         </div>
-                        <a href="/${username}/${repoName}/_edit/${branchName}/${filename}"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
-                        <a href="/${username}/${repoName}/_delete/${branchName}/${filename}"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                        <a href="/${username}/${repoName}/_edit/${checkoutName}/${filename}"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                        <a href="/${username}/${repoName}/_delete/${checkoutName}/${filename}"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
                     </div>
                </h4>
           </div>
@@ -784,8 +869,8 @@ class RepoContainer {
             self._clearBodyWrapper()
             // 添加二级菜单，包括分支栏
             let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
-                path: path,
-                commits_branches: responseRepoCommits.commits_branches,
+                repoPath: self.repoForPath(path),
+                repoOverview: responseRepoCommits.repo_overview,
             }
             self._parseCommitsSecondaryMenu(paramsParseSecondaryMenu)
             // 添加commit
@@ -799,21 +884,21 @@ class RepoContainer {
         // 先添加自己，再添加子元素
         this._appendSecondaryMenu()
         // 分支选择栏
-        this._appendMenuGitChoose(params.path, params.commits_branches)
-        this._appendCommitHeader(params.path)
+        this._appendMenuGitChoose(params.repoPath, params.repoOverview)
+        this._appendCommitHeader(params.repoPath)
     }
 
-    static _appendCommitHeader = (path: string) => {
-        let repoPath: RepoPath = this.repoForPath(path)
+    static _appendCommitHeader = (repoPath: RepoPath) => {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
+        let checkoutName: string = repoPath.checkoutName
+        let path = repoPath.path
         let arg: string = path.split('/')[3]
         let t = `
             <h4 class="ui top attached header">
                 Commit History
                 <div class="ui right">
-                <form action="/${username}/${repoName}/${arg}/${branchName}/search">
+                <form action="/${username}/${repoName}/${arg}/${checkoutName}/search">
                     <div class="ui tiny search input">
                         <input name="q" placeholder="Search commits" value="" autofocus="">
                     </div>
@@ -830,7 +915,7 @@ class RepoContainer {
         let repoPath: RepoPath = this.repoForPath(path)
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let branchName: string = repoPath.branchName
+        let checkoutName: string = repoPath.checkoutName
         let arg: string = path.split('/')[3]
         let tr: string = ``
         for (let item of commit_list) {
@@ -876,7 +961,6 @@ class RepoContainer {
     static parseBranches = (target: HTMLSelectElement) => {
         let self = this
         let path = target.dataset.path
-        log("parseBranches", path)
         APIContainer.repoBranches(path, function (r) {
             let response = JSON.parse(r)
             let resp: ResponseRepoBranches = response.data
@@ -959,7 +1043,6 @@ class RepoContainer {
         } else {
             sel = e(`.class-default-branch-list`)
         }
-        log("sel", sel)
         appendHtml(sel, t)
     }
 
@@ -989,7 +1072,6 @@ class RepoContainer {
         } else {
             sel = e(`.class-active-branch-list`)
         }
-        log("sel", sel)
         appendHtml(sel, item)
     }
 }
@@ -1000,68 +1082,63 @@ class RepoEvent {
         log("enter click path --- ", target)
         let path = target.dataset.path
         // 说明访问的是主路径
-        if (path.split('/').length == 5) {
-            RepoContainer.initRepo(path)
-        } else {
-            let type = target.dataset.type
-            let form = {
-                type: type,
-            }
-            APIContainer.repoSuffix(`${path}`, form, function (r) {
+        if (path.includes('suffix')) {
+            let repoPath = RepoContainer.repoForPath(path)
+            log("repoPath", repoPath)
+            APIContainer.repoTarget(`${path}`, function (r) {
                 let response = JSON.parse(r)
                 log("response:", response.data)
                 let res: ResponserRepoSuffix = response.data
-                if (type === EnumFileType.dir) {
+                if (repoPath.suffixType === EnumFileType.dir) {
                     // 进入文件二级目录
                     let params: ParamsEnterSecondaryDir = {
                         entries: res.entries,
-                        path: res.path,
+                        repoPath: repoPath,
                         latest_commit: res.latest_commit,
-                        commits_branches: res.commits_branches,
+                        repo_overview: res.repo_overview,
                     }
                     RepoContainer.enterSecondaryDir(params)
                 } else {
                     // 解析文件
                     let params: ParamsEnterFile = {
-                        path: path,
+                        repoPath: repoPath,
                         content: res.content,
-                        commits_branches: res.commits_branches,
+                        repo_overview: res.repo_overview,
                     }
                     RepoContainer.enterFile(params)
                 }
             })
+        } else {
+            RepoContainer.initRepo(path)
         }
     }
 
     static quit = (target: HTMLSelectElement) => {
         log("quit click path --- ", target)
         let path: string = target.dataset.path
-        let type: EnumFileType = EnumFileType.dir
-        let form = {
-            type: type
-        }
-        // 说明访问的是主路径，不然的话就是调到上面一层目录
-        if (path.split('/').length == 5) {
-            RepoContainer.initRepo(path)
-        } else {
-            APIContainer.repoSuffix(`${path}`, form, function (r) {
+        if (path.includes('suffix')) {
+            let repoPath = RepoContainer.repoForPath(path)
+            APIContainer.repoTarget(`${path}`, function (r) {
                 let response = JSON.parse(r)
                 log("response:", response.data)
                 let res: ResponserRepoSuffix = response.data
                 // 进入文件二级目录
-                    let params: ParamsEnterSecondaryDir = {
-                        entries: res.entries,
-                        path: res.path,
-                        latest_commit: res.latest_commit,
-                        commits_branches: res.commits_branches
-                    }
+                let params: ParamsEnterSecondaryDir = {
+                    entries: res.entries,
+                    repoPath: repoPath,
+                    latest_commit: res.latest_commit,
+                    repo_overview: res.repo_overview,
+                }
                 RepoContainer.enterSecondaryDir(params)
             })
+        } else {
+            RepoContainer.initRepo(path)
         }
     }
 
     // 监听浮动选择器
     static visible = () => {
+        log("点击到了 visible 事件")
         //
         let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
         floatingBranchSel.className += ' active visible'
@@ -1079,7 +1156,7 @@ class RepoEvent {
     static checkout = (target: HTMLSelectElement) => {
         log("checkout click path --- ", target)
         let path: string = target.dataset.path
-        let arg: string = path.split('/')[3]
+        let arg: string = path.split('?')[0].split('/')[3]
         if (arg === 'src') {
             this.enter(target)
         } else if (arg === 'commits') {
@@ -1121,8 +1198,8 @@ class ActionRepo extends Action {
             'quit': RepoEvent.quit,
             'visible': RepoEvent.visible,
             'checkout': RepoEvent.checkout,
-            'commits': RepoContainer.parseCommits,
-            'branches': RepoContainer.parseBranches,
+            // 'commits': RepoContainer.parseCommits,
+            // 'branches': RepoContainer.parseBranches,
         },
     }
 }

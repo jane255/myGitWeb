@@ -1,12 +1,13 @@
 import os
+import re
 import typing as t
 
 import pygit2
 from git import Repo
 
 import config
-from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, CommitsBranches, \
-    ResponseRepoCommits, BranchLatestCommit, ResponseRepoBranches
+from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, RepoStats, \
+    ResponseRepoCommits, BranchLatestCommit, ResponseRepoBranches, RepoOverview
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -52,35 +53,40 @@ class ServiceRepo:
         return path
 
     @classmethod
-    def repo_detail(cls, repo_name: str, user: User, branch_name: str) -> t.Dict:
-        clone_address: str = cls.clone_address_for_name(repo_name=repo_name, user_name=user.username)
-        entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, branch_name=branch_name)
+    def repo_detail(cls, repo_name: str, user: User, checkout_type: str, checkout_name: str) -> t.Dict:
+        entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, checkout_name=checkout_name)
         # log("entries", entries)
         resp = ResponseRepoDetail(
-            clone_address=clone_address,
             entries=entries,
-            path=f"/{user.username}/{repo_name}/src/{branch_name}",
         )
         if len(entries) > 0:
-            latest_commit: LatestCommitItem = cls.latest_commit(
+            # 统计
+            resp.repo_stats = cls.parse_repo_stats(
                 repo_name=repo_name,
                 user_id=user.id,
-                branch_name=branch_name,
-                path='',
+                checkout_name=checkout_name,
+            ).dict()
+            # 菜单栏
+            resp.repo_overview = cls.parse_repo_overview(
+                repo_name=repo_name,
+                user=user,
+                checkout_type=checkout_type,
+                checkout_name=checkout_name,
+            ).dict()
+            # 最新提交
+            latest_commit: LatestCommitItem = cls.parse_latest_commit(
+                repo_name=repo_name,
+                user_id=user.id,
+                checkout_name=checkout_name,
                 is_dir=True,
             )
             if latest_commit is not None:
                 resp.latest_commit = latest_commit.dict()
-            resp.commits_branches = cls.commits_and_branches(
-                repo_name=repo_name,
-                user_id=user.id,
-                branch_name=branch_name,
-            )
         return resp.dict()
 
     # 获取仓库的文件列表
     # path: 裸仓库路径
-    # branch_name: 分支名称, 例如 master
+    # checkout_name: 分支名称, 例如 master
 
     #  假设 path 对应的 git 仓库的文件结构如下
     # .
@@ -116,10 +122,10 @@ class ServiceRepo:
     #    }
     # ]
     @classmethod
-    def repo_entries(cls, repo_name: str, user_id: int, path: str = '', branch_name: str = 'master') -> t.List[t.Dict]:
-        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
-        repo = pygit2.Repository(repo_path)
-        branch = repo.branches.get(branch_name)
+    def repo_entries(
+            cls, repo_name: str, user_id: int, path: str = '', checkout_name: str = 'master') -> t.List[t.Dict]:
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user_id)
+        branch = repo.branches.get(checkout_name)
         # 说明是空仓库
         if branch is None:
             return []
@@ -135,20 +141,21 @@ class ServiceRepo:
         es = cls.tree_entries(tree, path)
         # 拿到文件或文件夹的最新提交记录
         for e in es:
-            commit_record = cls.entry_latest_commit(
+            commit_item = cls.parse_latest_commit(
                 repo_name=repo_name,
                 user_id=user_id,
-                branch_name=branch_name,
+                checkout_name=checkout_name,
                 path=e.get("path"),
                 is_dir=False if e.get("type") == EnumFileType.file.value else True,
-            )
-            hash_code = commit_record.hex
-            commit_time = timestamp_to_date(commit_record.commit_time)
-            commit_message = str(commit_record.message).strip()
-            e['hash_code'] = hash_code
-            e['commit_time'] = commit_time
-            e['commit_message'] = commit_message
+            ).dict()
+            e.update(commit_item)
         return es
+
+    @classmethod
+    def repo_for_path(cls, repo_name: str, user_id: int):
+        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+        repo = pygit2.Repository(repo_path)
+        return repo
 
     # 从 pygit2.Tree 类型中解析出文件列表
     # tree: 文件夹对应的 tree 类型对象
@@ -187,7 +194,7 @@ class ServiceRepo:
 
     # 文件或文件夹的最新提交记录
     # repo_path: 裸仓库路径
-    # branch_name: 分支名称, 例如 master
+    # checkout_name: 分支名称, 例如 master
     # path: 该对象在仓库中的路径
     # is_dir: 该对象是否是文件夹, 默认不是文件夹, 也就是说, 默认是文件
 
@@ -199,13 +206,13 @@ class ServiceRepo:
             cls,
             repo_name: str,
             user_id: int,
-            branch_name: str,
+            checkout_name: str,
             path: str,
             is_dir: bool = False,
     ) -> t.Optional[pygit2.Commit]:
         repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
         repo = pygit2.Repository(repo_path)
-        branch = repo.branches.get(branch_name)
+        branch = repo.branches.get(checkout_name)
         if branch is None:
             return branch
 
@@ -259,60 +266,208 @@ class ServiceRepo:
         first = commits[len(commits) - 1]
         return first
 
-    @staticmethod
-    def clone_address_for_name(repo_name: str, user_name: str) -> str:
-        return f"http://localhost:5000/{user_name}/{repo_name}.git"
+    @classmethod
+    def parse_repo_stats(
+            cls,
+            repo_name: str,
+            user_id: int,
+            checkout_name: str,
+    ) -> RepoStats:
+        commits = len(cls.get_commit_list(repo_name=repo_name, user_id=user_id, checkout_name=checkout_name))
+        branches = len(cls.get_branch_list(repo_name=repo_name, user_id=user_id))
+        releases = len(cls.get_tag_list(repo_name=repo_name, user_id=user_id))
+        stats = RepoStats(
+            commits=commits,
+            branches=branches,
+            releases=releases,
+        )
+        return stats
 
     @classmethod
-    def repo_suffix(cls, repo_name: str, user: User, branch_name: str, suffix: str,
-                    suffix_type: EnumFileType) -> ResponseRepoSuffix:
+    def get_commit_list(cls, repo_name: str, user_id: int, checkout_name: str) -> t.List:
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user_id)
+        branch = repo.branches.get(checkout_name)
+        commit = branch.peel()
+        # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
+        # walker 可以看作类似元素为 pygit2.Commit 对象的列表
+        walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
+        # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
+        commit_list = list(walker)
+        return commit_list
+
+    @classmethod
+    def get_branch_list(cls, repo_name: str, user_id: int) -> t.List:
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user_id)
+        #         - GIT_BRANCH_LOCAL - return all local branches (set by default)
+        #         - GIT_BRANCH_REMOTE - return all remote-tracking branches
+        #         - GIT_BRANCH_ALL - return local branches and remote-tracking branches
+        # # Listing all branches
+        # branches_list = list(repo.branches)
+        # # Local only
+        # local_branches = list(repo.branches.local)
+        # # Remote only
+        # remote_branches = list(repo.branches.remote)
+        return list(repo.branches)
+
+    @classmethod
+    def get_tag_list(cls, repo_name: str, user_id: int) -> t.List:
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user_id)
+        regex = re.compile('^refs/tags/')
+        tag_list = [r.split("refs/tags/")[-1] for r in repo.references if regex.match(r)]
+        return tag_list
+
+    @classmethod
+    def parse_repo_overview(
+            cls,
+            repo_name: str,
+            user: User,
+            checkout_name: str,
+            checkout_type: str,
+    ) -> RepoOverview:
+        branch_list = cls.get_branch_list(repo_name=repo_name, user_id=user.id)
+        tag_list = cls.get_tag_list(repo_name=repo_name, user_id=user.id)
+        clone_address = cls.clone_address_for_name(repo_name=repo_name, username=user.username)
+        response = RepoOverview(
+            branch_list=branch_list,
+            tag_list=tag_list,
+            clone_address=clone_address,
+            current_checkout_type=checkout_type,
+            current_checkout_name=checkout_name,
+        )
+        return response
+
+    @staticmethod
+    def clone_address_for_name(repo_name: str, username: str) -> str:
+        return f"http://localhost:5000/{username}/{repo_name}.git"
+
+    @classmethod
+    def parse_latest_commit(
+            cls,
+            repo_name: str,
+            user_id: int,
+            checkout_name: str,
+            path: str = '',
+            is_dir: bool = False,
+    ) -> t.Optional[LatestCommitItem]:
+        commit_record = cls.entry_latest_commit(
+            repo_name=repo_name,
+            user_id=user_id,
+            checkout_name=checkout_name,
+            path=path,
+            is_dir=is_dir,
+        )
+        if commit_record is None:
+            return None
+        commit_item = cls.parse_commit_item(commit_record)
+        return commit_item
+
+    @staticmethod
+    def parse_commit_item(commit_record: pygit2.Commit) -> LatestCommitItem:
+        author = str(commit_record.author).strip().split()[0]
+        hash_code = commit_record.hex
+        commit_time = timestamp_to_date(commit_record.commit_time)
+        commit_message = str(commit_record.message).strip()
+        item = LatestCommitItem(
+            author=author,
+            hash_code=hash_code,
+            commit_time=commit_time,
+            commit_message=commit_message,
+        )
+        return item
+
+    @classmethod
+    def repo_commits(
+            cls,
+            repo_name: str,
+            user: User,
+            checkout_type: str,
+            checkout_name: str,
+    ) -> t.Dict:
+        commits = cls.get_commit_list(repo_name=repo_name, user_id=user.id, checkout_name=checkout_name)
+        result = []
+        for commit_record in commits:
+            item = cls.parse_commit_item(commit_record)
+            result.append(item.dict())
+
+        repo_overview: RepoOverview = cls.parse_repo_overview(
+            repo_name=repo_name,
+            checkout_type=checkout_type,
+            checkout_name=checkout_name,
+            user=user,
+        )
+        resp = ResponseRepoCommits(
+            commit_list=result,
+            repo_overview=repo_overview,
+        )
+        return resp.dict()
+
+    @classmethod
+    def repo_suffix(
+            cls,
+            repo_name: str,
+            user: User,
+            checkout_type: str,
+            checkout_name: str,
+            suffix: str,
+            suffix_type: EnumFileType.file.value
+    ) -> t.Dict:
         if suffix_type == EnumFileType.file.value:
-            content: str = cls.file_content(repo_name=repo_name, user_id=user.id, path=suffix, branch_name=branch_name)
-            commits_branches: t.Dict = cls.commits_and_branches(
+            content: str = cls.file_content(
                 repo_name=repo_name,
                 user_id=user.id,
-                branch_name=branch_name,
+                path=suffix,
+                checkout_name=checkout_name,
             )
+            repo_overview = cls.parse_repo_overview(
+                repo_name=repo_name,
+                user=user,
+                checkout_type=checkout_type,
+                checkout_name=checkout_name,
+            ).dict()
             resp = ResponseRepoSuffix(
                 content=content,
-                commits_branches=commits_branches,
+                repo_overview=repo_overview,
             )
-            return resp
+            return resp.dict()
         else:
-            entries: t.List[t.Dict] = cls.repo_entries(repo_name=repo_name, user_id=user.id, path=suffix,
-                                                       branch_name=branch_name)
-            # log("entries", entries)
-            latest_commit = cls.latest_commit(
+            entries: t.List[t.Dict] = cls.repo_entries(
                 repo_name=repo_name,
                 user_id=user.id,
-                branch_name=branch_name,
+                path=suffix,
+                checkout_name=checkout_name,
+            )
+            # log("entries", entries)
+            latest_commit = cls.parse_latest_commit(
+                repo_name=repo_name,
+                user_id=user.id,
+                checkout_name=checkout_name,
                 path=suffix,
                 is_dir=True,
             )
-            commits_branches: t.Dict = cls.commits_and_branches(
+            repo_overview = cls.parse_repo_overview(
                 repo_name=repo_name,
-                user_id=user.id,
-                branch_name=branch_name,
-            )
+                user=user,
+                checkout_type=checkout_type,
+                checkout_name=checkout_name,
+            ).dict()
             resp = ResponseRepoSuffix(
                 entries=entries,
                 latest_commit=latest_commit,
-                commits_branches=commits_branches,
+                repo_overview=repo_overview,
             )
-            return resp
+            return resp.dict()
 
     # 获取文件内容
     # repo_path: 裸仓库路径
-    # branch_name: 分支名称, 例如 master
+    # checkout_name: 分支名称, 例如 master
     # path: 该文件在仓库中的路径
     @classmethod
-    def file_content(cls, repo_name: str, user_id: int, path: str, branch_name: str = 'master') -> str:
-        # log("file_content", repo_name, user_id, path, branch_name)
-        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+    def file_content(cls, repo_name: str, user_id: int, path: str, checkout_name: str = 'master') -> str:
+        # log("file_content", repo_name, user_id, path, checkout_name)
         # 通过裸仓库路径生成 Repository 对象
-        repo = pygit2.Repository(repo_path)
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user_id)
         # 通过分支名生成 pygit2.Branch 对象, pygit2.Branch 对应在 git 中的概念是分支
-        branch = repo.branches[branch_name]
+        branch = repo.branches[checkout_name]
         # 获取该分支的最新 commit
         commit = branch.peel()
         # commit.tree 对应仓库的根目录
@@ -328,146 +483,35 @@ class ServiceRepo:
         data = entry.data.decode('utf-8')
         return data
 
-    @classmethod
-    def latest_commit(
-            cls,
-            repo_name: str,
-            user_id: int,
-            branch_name: str,
-            path: str,
-            is_dir: bool = False,
-    ) -> t.Optional[LatestCommitItem]:
-        commit_record = cls.entry_latest_commit(
-            repo_name=repo_name,
-            user_id=user_id,
-            branch_name=branch_name,
-            path=path,
-            is_dir=is_dir,
-        )
-        if commit_record is None:
-            return None
-        commit_item = cls.get_commit_item(commit_record)
-        return commit_item
-
-    @classmethod
-    def commits_and_branches(
-            cls,
-            repo_name: str,
-            user_id: int,
-            branch_name: str,
-    ) -> t.Dict:
-        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
-        repo = pygit2.Repository(repo_path)
-        #         - GIT_BRANCH_LOCAL - return all local branches (set by default)
-        #         - GIT_BRANCH_REMOTE - return all remote-tracking branches
-        #         - GIT_BRANCH_ALL - return local branches and remote-tracking branches
-        # # Listing all branches
-        # branches_list = list(repo.branches)
-        # # Local only
-        # local_branches = list(repo.branches.local)
-        # # Remote only
-        # remote_branches = list(repo.branches.remote)
-        branch_num = len(list(repo.branches))
-
-        branch = repo.branches.get(branch_name)
-        if branch is None:
-            commit_num = 0
-        else:
-            commit = branch.peel()
-            # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
-            # walker 可以看作类似元素为 pygit2.Commit 对象的列表
-            walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
-            # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
-            commits = list(walker)
-            commit_num = len(commits)
-        cb = CommitsBranches(
-            branch_list=list(repo.branches),
-            commit_num=commit_num,
-            branch_num=branch_num,
-            current_branch=branch_name,
-        )
-        return cb.dict()
-
-    @staticmethod
-    def get_commit_item(commit_record: pygit2.Commit) -> LatestCommitItem:
-        author = str(commit_record.author).strip().split()[0]
-        hash_code = commit_record.hex
-        commit_time = timestamp_to_date(commit_record.commit_time)
-        commit_message = str(commit_record.message).strip()
-        item = LatestCommitItem(
-            author=author,
-            hash_code=hash_code,
-            commit_time=commit_time,
-            commit_message=commit_message,
-        )
-        return item
-
-    @classmethod
-    def commit_list(
-            cls,
-            repo_name: str,
-            user: User,
-            branch_name: str,
-    ) -> t.Dict:
-        user_id = user.id
-        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
-        repo = pygit2.Repository(repo_path)
-        branch = repo.branches.get(branch_name)
-
-        result = []
-        if branch is None:
-            return dict(commit_list=[])
-
-        commit = branch.peel()
-        # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
-        # walker 可以看作类似元素为 pygit2.Commit 对象的列表
-        walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
-        # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
-        commits = list(walker)
-        for commit_record in commits:
-            item = cls.get_commit_item(commit_record)
-            result.append(item.dict())
-
-        commits_branches: t.Dict = cls.commits_and_branches(
-            repo_name=repo_name,
-            user_id=user_id,
-            branch_name=branch_name,
-        )
-        resp = ResponseRepoCommits(
-            commit_list=result,
-            commits_branches=commits_branches,
-        )
-        return resp.dict()
-
-    @classmethod
-    def branch_list(
-            cls,
-            repo_name: str,
-            user: User,
-    ) -> t.Dict:
-        user_id = user.id
-        repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
-        repo = pygit2.Repository(repo_path)
-        branches = list(repo.branches)
-
-        branch_commit_dict = dict()
-        for b in branches:
-            commit = cls.latest_commit(
-                repo_name=repo_name,
-                user_id=user.id,
-                branch_name=b,
-                path='',
-                is_dir=True,
-            ).dict()
-            commit['branch_name'] = b
-            branch_commit_dict[b] = commit
-
-        master = 'master'
-        default = branch_commit_dict.pop(master)
-        active_list = list(branch_commit_dict.values())
-
-        resp = ResponseRepoBranches(
-            default=default,
-            active_list=active_list,
-        )
-        return resp.dict()
+    # @classmethod
+    # def branch_list(
+    #         cls,
+    #         repo_name: str,
+    #         user: User,
+    # ) -> t.Dict:
+    #     user_id = user.id
+    #     repo_path: str = cls.real_repo_path(repo_name=repo_name, user_id=user_id)
+    #     repo = pygit2.Repository(repo_path)
+    #     branches = list(repo.branches)
+    #
+    #     branch_commit_dict = dict()
+    #     for b in branches:
+    #         commit = cls.parse_latest_commit(
+    #             repo_name=repo_name,
+    #             user_id=user.id,
+    #             checkout_name=b,
+    #             path='',
+    #             is_dir=True,
+    #         ).dict()
+    #         commit['checkout_name'] = b
+    #         branch_commit_dict[b] = commit
+    #
+    #     master = 'master'
+    #     default = branch_commit_dict.pop(master)
+    #     active_list = list(branch_commit_dict.values())
+    #
+    #     resp = ResponseRepoBranches(
+    #         default=default,
+    #         active_list=active_list,
+    #     )
+    #     return resp.dict()
