@@ -431,12 +431,12 @@ class RepoContainer {
                                 <div class="ui grid">
                                     <div class="two column row">
                                         <a class="reference column" href="#" data-target="#branch-list">
-                                            <span class="text black">
+                                            <span class="text black class-checkout-text-branch" data-action="scrolling">
                                                 Branches
                                             </span>
                                         </a>
                                         <a class="reference column" href="#" data-target="#tag-list">
-                                            <span class="text ">
+                                            <span class="text class-checkout-text-tag" data-action="scrolling">
                                                 Tags
                                             </span>
                                         </a>
@@ -1153,9 +1153,8 @@ class RepoEvent {
         menuBranchSel.className += ' transition visible'
         menuBranchSel.style.display = 'block !important'
         // 设置 body 的 dataset 为 visible 状态，开始统计点击 visible 状态
-        // let chooseSel = e(`body`)
-        // chooseSel.dataset.visible = "0"
-        //
+        let chooseSel = e(`body`)
+        chooseSel.dataset.visible = "0"
     }
 
     // 监听浮动选择器
@@ -1174,26 +1173,47 @@ class RepoEvent {
 
     // 监听点击事件，假设这时候有浮动的过滤器展开了，设置为关闭
     static bindClick = () => {
-        // bindEvent('body', 'click', function (event) {
-        //     let bodySel = e('body')
-        //     // 之所以多这一步设置为 "1" 的状态，是因为这一次监听点击跟上面的监听 visible 点击是同步发生的，所以需要多走一步
-        //     if (bodySel.dataset.visible == '0') {
-        //         bodySel.dataset.visible = "1"
-        //
-        //     } else if (e('body').dataset.visible == '1') {
-        //         // visible 设置为 -1
-        //         bodySel.dataset.visible = "-1"
-        //         // 关闭浮动器
-        //         let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
-        //         let floatingBranchClassNames: string[] = floatingBranchSel.className.split(' ')
-        //         floatingBranchSel.className = floatingBranchClassNames.splice(0, floatingBranchClassNames.length - 2).join(' ')
-        //         //
-        //         let menuBranchSel: HTMLSelectElement = e(`.class-floating-menu`)
-        //         let menuBranchSelClassNames = menuBranchSel.className.split(' ')
-        //         menuBranchSel.className = menuBranchSelClassNames.splice(0, menuBranchSelClassNames.length - 2).join(' ')
-        //         menuBranchSel.style.display = 'none'
-        //     }
-        // })
+        bindEvent('body', 'click', function (event) {
+            let bodySel = e('body')
+            let target = event.target as HTMLSelectElement
+            // 之所以多这一步设置为 "1" 的状态，是因为这一次监听点击跟上面的监听 visible 点击是同步发生的，所以需要多走一步
+            if (bodySel.dataset.visible == '0') {
+                bodySel.dataset.visible = "1"
+
+            } else if (e('body').dataset.visible == '1' && !target.className.includes('text') && !target.className.includes('item')) {
+                // visible 设置为 -1
+                bodySel.dataset.visible = "-1"
+                // 关闭浮动器
+                let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
+                let floatingBranchClassNames: string[] = floatingBranchSel.className.split(' ')
+                floatingBranchSel.className = floatingBranchClassNames.splice(0, floatingBranchClassNames.length - 2).join(' ')
+                //
+                let menuBranchSel: HTMLSelectElement = e(`.class-floating-menu`)
+                let menuBranchSelClassNames = menuBranchSel.className.split(' ')
+                menuBranchSel.className = menuBranchSelClassNames.splice(0, menuBranchSelClassNames.length - 2).join(' ')
+                menuBranchSel.style.display = 'none'
+            }
+        })
+    }
+
+    // 监听 branch 和 tag 显示列表
+    static parseScrolling = (target: HTMLSelectElement) => {
+        log("parseScrolling click target --- ", target)
+        // 设置文字变黑
+        target.className += ' black'
+        // 设置对面文字变蓝
+        let checkoutText = target.className.includes('class-checkout-text-branch') ? 'class-checkout-text-tag' : 'class-checkout-text-branch'
+        let checkoutTextSel = e(`.${checkoutText}`)
+        checkoutTextSel.className = `text ${checkoutText}`
+        // 设置父元素指向的列表展示出来
+        let parent = target.parentElement
+        let targetId = parent.dataset.target
+        let targetSel = e(`${targetId}`)
+        targetSel.style.display = 'block'
+        // 设置对面列表隐藏
+        let listId = targetId === '#tag-list' ? '#branch-list' : '#tag-list'
+        let listSel = e(`${listId}`)
+        listSel.style.display = 'none'
     }
 }
 
@@ -1206,6 +1226,7 @@ class ActionRepo extends Action {
             'checkout': RepoEvent.checkout,
             'commits': RepoContainer.parseCommits,
             'branches': RepoContainer.parseBranches,
+            'scrolling': RepoEvent.parseScrolling,
         },
     }
 }
