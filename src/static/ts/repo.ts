@@ -1063,11 +1063,15 @@ class RepoContainer {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
 
+        let r: RepoPath = {...repoPath}
+        r.checkoutName = commit.checkout_name
+        r.target = 'src'
+        let dataPath = this.pathForRepo(r)
         let t: string = `
             <div class="item ui grid">
                 <div class="ui eleven wide column">
-                    <a class="markdown" href="/${username}/${repoName}">
-                        <code>${commit.checkout_name}</code>
+                    <a class="markdown">
+                        <code data-path="${dataPath}" data-action="checkout">${commit.checkout_name}</code>
                     </a>
                     <span class="ui text light grey">
                         Updated 
@@ -1098,11 +1102,15 @@ class RepoContainer {
 
         let item: string = ``
         for (let branchLatestCommit of activeList) {
+            let r: RepoPath = {...repoPath}
+            r.target = 'src'
+            r.checkoutName = branchLatestCommit.checkout_name
+            let dataPath = this.pathForRepo(r)
             item += `
                 <div class="item ui grid">
                     <div class="ui eleven wide column">
-                        <a class="markdown" href="/${username}/${repoName}">
-                            <code>${branchLatestCommit.checkout_name}</code>
+                        <a class="markdown">
+                            <code data-path="${dataPath}" data-action="checkout">${branchLatestCommit.checkout_name}</code>
                         <span class="ui text light grey">
                             Updated 
                             <span class="time-since poping up" title="" data-content="Wed, 03 May 2023 01:23:25 UTC" data-variation="inverted tiny">
