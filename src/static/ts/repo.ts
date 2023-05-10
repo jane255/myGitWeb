@@ -431,7 +431,7 @@ class RepoContainer {
                                 <div class="ui grid">
                                     <div class="two column row">
                                         <a class="reference column" href="#" data-target="#branch-list">
-                                            <span class="text black class-checkout-text-branch" data-action="scrolling">
+                                            <span class="text class-checkout-text-branch" data-action="scrolling">
                                                 Branches
                                             </span>
                                         </a>
@@ -455,8 +455,19 @@ class RepoContainer {
         `
         appendHtml(secondaryMenuSel, t)
         // 设置隐藏
-        let sel = repoOverview.current_checkout_type == EnumCheckoutType.branch ? e(`#tag-list`) : e(`#branch-list`)
-        sel.style.display = 'none'
+        let tagListSel = e(`#tag-list`)
+        let branchListSel = e(`#branch-list`)
+        if (repoOverview.current_checkout_type == EnumCheckoutType.branch) {
+            tagListSel.style.display = 'none'
+            branchListSel.style.display = 'block'
+            let sel = e(`.class-checkout-text-branch`)
+            sel.className += ' black'
+        } else {
+            branchListSel.style.display = 'none'
+            tagListSel.style.display = 'block'
+            let sel = e(`.class-checkout-text-tag`)
+            sel.className += ' black'
+        }
     }
 
     static _appendMenuCurrentDir= (repoPath: RepoPath) => {
@@ -877,6 +888,8 @@ class RepoContainer {
             log("responseRepoCommits", responseRepoCommits)
             // 清空页面 body-wrapper
             self._clearBodyWrapper()
+                        // 设置布局
+            self._setRepositoryCommits()
             // 添加二级菜单，包括分支栏
             let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
                 repoPath: self.repoForPath(path),
@@ -886,6 +899,11 @@ class RepoContainer {
             // 添加commit
             self._parseCommitsTable(path, responseRepoCommits.commit_list)
         })
+    }
+
+    static _setRepositoryCommits = () => {
+        let repositorySel = e(`.repository`)
+        repositorySel.className = 'repository commits'
     }
 
     static _parseCommitsSecondaryMenu = (
@@ -977,6 +995,8 @@ class RepoContainer {
             let repoPath: RepoPath = self.repoForPath(path)
             // 清空页面 body-wrapper
             self._clearBodyWrapper()
+            // 设置布局
+            self._setRepositoryBranches(path)
             // 设置菜单
             self._parseNavbar(repoPath, path)
             // 设置 default
@@ -984,6 +1004,15 @@ class RepoContainer {
             // 设置 actives
             self._parseActiveBranches(resp.active_list, repoPath, path)
         })
+    }
+
+    static _setRepositoryBranches = (path: string) => {
+        let repositorySel = e(`.repository`)
+        if (path.includes('/branches/all')) {
+            repositorySel.className = 'repository branches all'
+        } else {
+            repositorySel.className = 'repository branches overview'
+        }
     }
 
     static _parseNavbar = (repoPath: RepoPath, path: string) => {
@@ -1037,11 +1066,20 @@ class RepoContainer {
         let t: string = `
             <div class="item ui grid">
                 <div class="ui eleven wide column">
-                <a class="markdown" href="/${username}/${repoName}"><code>${commit.checkout_name}</code></a>
-                <span class="ui text light grey">Updated <span class="time-since poping up" title="" data-content="Mon, 01 May 2023 15:11:03 UTC" data-variation="inverted tiny">${commit.commit_time}</span> by ${commit.author}</span>
+                    <a class="markdown" href="/${username}/${repoName}">
+                        <code>${commit.checkout_name}</code>
+                    </a>
+                    <span class="ui text light grey">
+                        Updated 
+                        <span class="time-since poping up" title="" data-content="Mon, 01 May 2023 15:11:03 UTC" data-variation="inverted tiny">
+                        ${commit.commit_time}
+                        </span> by ${commit.author}
+                    </span>
                 </div>
                 <div class="ui four wide column">
-                <a class="ui basic blue button" data-path="/${username}/${repoName}/settings/branches">Change Default Branch</a>
+                    <a class="ui basic blue button" data-path="/${username}/${repoName}/settings/branches">
+                        Change Default Branch
+                    </a>
                 </div>
             </div>
         `
@@ -1063,11 +1101,20 @@ class RepoContainer {
             item += `
                 <div class="item ui grid">
                     <div class="ui eleven wide column">
-                    <a class="markdown" href="/${username}/${repoName}"><code>${branchLatestCommit.checkout_name}<span class="ui text light grey">Updated <span class="time-since poping up" title="" data-content="Wed, 03 May 2023 01:23:25 UTC" data-variation="inverted tiny">${branchLatestCommit.commit_time}</span> by ${branchLatestCommit.author}</span>
+                        <a class="markdown" href="/${username}/${repoName}">
+                            <code>${branchLatestCommit.checkout_name}</code>
+                        <span class="ui text light grey">
+                            Updated 
+                            <span class="time-since poping up" title="" data-content="Wed, 03 May 2023 01:23:25 UTC" data-variation="inverted tiny">
+                            ${branchLatestCommit.commit_time}
+                            </span> by ${branchLatestCommit.author}
+                        </span>
                     </div>
-                    
                     <div class="ui four wide column">
-                    <a class="ui basic button" href="/${username}/${repoName}/compare/master...${branchLatestCommit.checkout_name}"><i class="octicon octicon-git-pull-request"></i> New Pull Request</a>
+                        <a class="ui basic button" href="/${username}/${repoName}/compare/master...${branchLatestCommit.checkout_name}">
+                            <i class="octicon octicon-git-pull-request"></i> 
+                            New Pull Request
+                        </a>
                     </div>
                 </div>
             `
@@ -1080,6 +1127,98 @@ class RepoContainer {
         }
         appendHtml(sel, item)
     }
+
+    static parseReleases = (target: HTMLSelectElement) => {
+        let self = this
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoReleases = response.data
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+        //    设置 release
+            self._setRepositoryReleases()
+        //    增加 header
+            self._parseReleasesHeader(repoPath)
+        //    增加 release list
+            self._parseReleasesList(repoPath, resp.release_list)
+        })
+    }
+
+    static _setRepositoryReleases = () => {
+        let repositorySel = e(`.repository`)
+        repositorySel.className = 'repository release'
+    }
+
+    static _parseReleasesHeader = (repoPath: RepoPath) => {
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let t = `
+            <h2 class="ui header">
+                Releases
+                <div class="ui right">
+                    <a class="ui small green button" data-path="/${username}/${repoName}/releases/new">
+                    New Release
+                    </a>
+                </div>
+            </h2>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+    }
+
+    static _parseReleasesList = (repoPath: RepoPath, branchLatestCommitList: BranchLatestCommit[]) => {
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let li: string = ``
+        for (let commit of branchLatestCommitList) {
+            let r = {...repoPath}
+            r.target = 'src'
+            r.checkoutType = EnumCheckoutType.tag
+            r.checkoutName = commit.checkout_name
+            let detailDataPath = this.pathForRepo(r)
+            li += `
+                <li class="ui grid">
+                    <div class="ui four wide column meta">
+                        <span class="commit">
+                            <a data-path="/${username}/${repoName}/src/${commit.hash_code}"rel="nofollow">
+                                <i class="code icon"></i> ${commit.hash_code.substring(0, 10)}</a>
+                        </span>
+                    </div>
+                    <div class="ui twelve wide column detail">
+                        <h4>
+                            <a data-path="${detailDataPath}" rel="nofollow" data-action="checkout" ><i class="tag icon">
+                                </i> ${commit.checkout_name}
+                            </a>
+                        </h4>
+                        <div class="download">
+                            <a  rel="nofollow"><i class="octicon octicon-file-zip"></i>${commit.commit_message}</a>
+                            <a ><i class="octicon octicon-file-zip"></i>${commit.commit_time}</a>
+                        </div>
+                        <span class="dot">&nbsp;</span>
+                    </div>
+                </li>
+            `
+        }
+        let tt = `
+            <ul id="release-list">
+                ${li}
+            </ul>
+        `
+        let ttt = `
+            <div class="center">
+                <a class="ui small button disabled">
+              Previous
+                </a>
+                <a class="ui small button disabled">
+                Next
+                </a>
+            </div>
+        `
+        appendHtml(this.bodyWrapperSel, tt)
+        appendHtml(this.bodyWrapperSel, ttt)
+    }
+
 }
 
 class RepoEvent {
@@ -1224,9 +1363,11 @@ class ActionRepo extends Action {
             'quit': RepoEvent.quit,
             'visible': RepoEvent.visible,
             'checkout': RepoEvent.checkout,
+            'scrolling': RepoEvent.parseScrolling,
+        //
             'commits': RepoContainer.parseCommits,
             'branches': RepoContainer.parseBranches,
-            'scrolling': RepoEvent.parseScrolling,
+            'releases': RepoContainer.parseReleases,
         },
     }
 }

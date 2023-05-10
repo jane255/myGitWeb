@@ -130,6 +130,8 @@ def repo_detail(username: str, repo_name: str):
     checkout_type = request.args.get('checkoutType', EnumCheckoutType.branch.value)
     # 切换名
     checkout_name = request.args.get('checkoutName', 'master')
+    if checkout_type == EnumCheckoutType.tag.value:
+        checkout_name = f'refs/tags/{checkout_name}'
     # 检查是否有 suffix
     if 'suffix' in request.args:
         suffix = request.args.get('suffix')
@@ -170,11 +172,25 @@ def repo_commits(username: str, repo_name: str):
     checkout_type = request.args.get('checkoutType', EnumCheckoutType.branch.value)
     # 切换名
     checkout_name = request.args.get('checkoutName', 'master')
+    if checkout_type == EnumCheckoutType.tag.value:
+        checkout_name = f'refs/tags/{checkout_name}'
 
     response = ServiceRepo.repo_commits(
         repo_name=repo_name,
         user=user,
         checkout_type=checkout_type,
         checkout_name=checkout_name,
+    )
+    return response
+
+
+# 仓库 release 列表
+@main.route('/<username>/<repo_name>/releases', methods=['GET'])
+@login_required
+def repo_releases(username: str, repo_name: str):
+    user = current_user()
+    response = ServiceRepo.repo_releases(
+        repo_name=repo_name,
+        user=user,
     )
     return response

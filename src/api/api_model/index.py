@@ -108,3 +108,9 @@ class ResponseRepoBranches(BaseModel):
     """结构"""
     default: BranchLatestCommit
     active_list: t.List[BranchLatestCommit]
+
+
+# /repo/releases
+class ResponseRepoReleases(BaseModel):
+    """结构"""
+    release_list: t.List[BranchLatestCommit]

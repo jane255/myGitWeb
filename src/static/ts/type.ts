@@ -141,6 +141,10 @@ interface ResponseRepoBranches {
     active_list: BranchLatestCommit[]
 }
 
+// /repo/releases
+interface ResponseRepoReleases {
+    release_list: BranchLatestCommit[]
+}
 
 
 
