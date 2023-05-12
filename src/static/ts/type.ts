@@ -146,7 +146,12 @@ interface ResponseRepoReleases {
     release_list: BranchLatestCommit[]
 }
 
-
+// /repo/commit/hash
+interface ResponseRepoCommitHash {
+    commit: LatestCommitItem
+    parent_id: string
+    patch_text_list: string[]
+}
 
 
 

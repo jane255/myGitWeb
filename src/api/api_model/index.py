@@ -114,3 +114,11 @@ class ResponseRepoBranches(BaseModel):
 class ResponseRepoReleases(BaseModel):
     """结构"""
     release_list: t.List[BranchLatestCommit]
+
+
+# /repo/commit/hash
+class ResponseRepoCommitHash(BaseModel):
+    """结构"""
+    commit: LatestCommitItem
+    parent_id: str = Field(default=None)
+    patch_text_list: t.List[str]

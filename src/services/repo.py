@@ -8,7 +8,7 @@ from git import Repo
 import config
 from api.api_model.enum import EnumCheckoutType
 from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, RepoStats, \
-    ResponseRepoCommits, ResponseRepoBranches, RepoOverview, ResponseRepoReleases
+    ResponseRepoCommits, ResponseRepoBranches, RepoOverview, ResponseRepoReleases, ResponseRepoCommitHash
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -280,7 +280,8 @@ class ServiceRepo:
             checkout_type: str,
             checkout_name: str,
     ) -> RepoStats:
-        commits = len(cls.get_commit_list(repo_name=repo_name, user_id=user_id, checkout_type=checkout_type, checkout_name=checkout_name))
+        commits = len(cls.get_commit_list(repo_name=repo_name, user_id=user_id, checkout_type=checkout_type,
+                                          checkout_name=checkout_name))
         branches = len(cls.get_branch_list(repo_name=repo_name, user_id=user_id))
         releases = len(cls.get_tag_list(repo_name=repo_name, user_id=user_id))
         stats = RepoStats(
@@ -338,7 +339,8 @@ class ServiceRepo:
             tag_list=tag_list,
             clone_address=clone_address,
             current_checkout_type=checkout_type,
-            current_checkout_name=checkout_name if checkout_type == EnumCheckoutType.branch.value else checkout_name.split('/')[-1],
+            current_checkout_name=checkout_name if checkout_type == EnumCheckoutType.branch.value else
+            checkout_name.split('/')[-1],
         )
         return response
 
@@ -391,7 +393,8 @@ class ServiceRepo:
             checkout_type: str,
             checkout_name: str,
     ) -> t.Dict:
-        commits = cls.get_commit_list(repo_name=repo_name, user_id=user.id, checkout_type=checkout_type, checkout_name=checkout_name)
+        commits = cls.get_commit_list(repo_name=repo_name, user_id=user.id, checkout_type=checkout_type,
+                                      checkout_name=checkout_name)
         result = []
         for commit_record in commits:
             item = cls.parse_commit_item(commit_record)
@@ -489,7 +492,8 @@ class ServiceRepo:
     # checkout_name: 分支名称, 例如 master
     # path: 该文件在仓库中的路径
     @classmethod
-    def file_content(cls, repo_name: str, user_id: int, path: str, checkout_type: str, checkout_name: str = 'master') -> str:
+    def file_content(cls, repo_name: str, user_id: int, path: str, checkout_type: str,
+                     checkout_name: str = 'master') -> str:
         # log("file_content", repo_name, user_id, path, checkout_name)
         commit = cls.commit_for_checkout_type(
             repo_name=repo_name, user_id=user_id, checkout_type=checkout_type, checkout_name=checkout_name)
@@ -562,3 +566,34 @@ class ServiceRepo:
             release_list=result,
         )
         return resp.dict()
+
+    @classmethod
+    def repo_commit_hash(cls, repo_name: str, user: User, hash_code: str) -> t.Dict:
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user.id)
+        commit: pygit2.Commit = repo.get(hash_code)
+        # 获取提交信息
+        commit_item = cls.parse_commit_item(commit)
+        # 找到 parent
+        if len(commit.parent_ids) > 0:
+            parent_id = commit.parent_ids[0]
+            # parent_id 是 parent commit 的 commit id
+            # repo[parent_id] 可以通过该 id 找到仓库里的对象
+            parent = repo[parent_id]
+        else:
+            parent = None
+            parent_id = None
+        # 返回的对象可能是 pygit2.Blob、pygit2.Tree、pygit2.Commit 和 pygit2.Tag
+        # 此处预期是返回 pygit2.Commit
+        assert isinstance(parent, pygit2.Commit)
+        # 相当于命令 git diff parent.hex commit.hex
+        diff = repo.diff(parent, commit)
+        # repo.diff 返回 pygit2.Diff 对象
+        assert isinstance(diff, pygit2.Diff)
+        patch_text_list = [patch.text for patch in diff]
+
+        response = ResponseRepoCommitHash(
+            commit=commit_item,
+            parent_id=str(parent_id) if parent_id is not None else parent_id,
+            patch_text_list=patch_text_list,
+        )
+        return response.dict()

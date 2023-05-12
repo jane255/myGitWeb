@@ -626,7 +626,7 @@ class RepoContainer {
                              src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
                         <strong>${author}</strong>
                         <a rel="nofollow" class="ui sha label"
-                           href="/${username}/${repoName}/commit/${hash_code}">${hash}</a>
+                           data-path="/${username}/${repoName}/commit/${hash_code}" data-action="hashDiff">${hash}</a>
                         <span class="grey has-emoji">${commit_message}</span>
                     </th>
                     <th class="nine wide">
@@ -701,7 +701,7 @@ class RepoContainer {
                     </td>
                     <td class="message collapsing has-emoji">
                         <a rel="nofollow" class="ui sha label"
-                           href="/${username}/${repoName}/commit/${hashCode}">${hashCode.substring(0, 10)}</a>
+                           data-path="/${username}/${repoName}/commit/${hashCode}" data-action="hashDiff">${hashCode.substring(0, 10)}</a>
                         ${commit}
                     </td>
                     <td class="text grey right age"><span>${ct}</span></td>
@@ -944,7 +944,7 @@ class RepoContainer {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
         let checkoutName: string = repoPath.checkoutName
-        let arg: string = path.split('/')[3]
+        let arg: string = repoPath.target
         let tr: string = ``
         for (let item of commit_list) {
             tr += `
@@ -954,7 +954,7 @@ class RepoContainer {
                         ${item.author}
                     </td>
                     <td class="message collapsing">
-                        <a rel="nofollow" class="ui sha label" data-path="/${username}/${repoName}/${arg}/${item.hash_code}">
+                        <a rel="nofollow" class="ui sha label" data-path="/${username}/${repoName}/commit/${item.hash_code}" data-action="hashDiff">
                         ${item.hash_code.substring(0, 10)}
                         </a>
                         <span class=" has-emoji">${item.commit_message}</span>
@@ -1227,6 +1227,239 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, ttt)
     }
 
+    static parseHashDiff = (target) => {
+        let self = this
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoCommitHash = response.data
+            log("response data", resp)
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+        //    设置布局
+            self._setRepositoryCommitDiff()
+        //    增加 header
+            self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
+        //    增加 list
+            self._parseCommitDiffList(repoPath, resp.patch_text_list)
+        })
+    }
+
+    static _setRepositoryCommitDiff = () => {
+        let repositorySel = e(`.repository`)
+        repositorySel.className = 'repository diff'
+    }
+
+    static _parseCommitDiffHeader = (repoPath: RepoPath, commit: LatestCommitItem, parentId: string) => {
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let parent: string = ``
+        if (parentId !== null) {
+            parent += `
+                <div class="ui right">
+                    <div class="ui horizontal list">
+                        <div class="item">
+                            parent
+                        </div>
+                    <div class="item">
+                    <a class="ui blue sha label" data-path="/${username}/${repoName}/commit/${parentId}" data-action="hashDiff">
+                        ${parentId.substring(0, 10)}
+                    </a>
+                </div>
+            `
+        }
+        let t = `
+            <div class="ui top attached info clearing segment">
+                <a class="ui floated right blue tiny button" data-path="/${username}/${repoName}/src/${commit.hash_code}">
+                    Browse Source
+                </a>
+                <div class="commit-message">
+                    <h3>${commit.commit_message}</h3>
+                </div>
+            </div>
+            
+            <div class="ui attached info segment">
+                <img class="ui avatar image" src="https://secure.gravatar.com/avatar/9477f6251d8aa33b64fb64f6a7c377d0?d=identicon" />
+                <strong>${commit.author}</strong>
+            
+                <span class="text grey" id="authored-time">
+                    <span class="time-since" title="Fri, 12 May 2023 09:53:52 UTC">
+                        ${commit.commit_time}
+                    </span>
+                </span>
+                    ${parent}
+            
+                <div class="item">commit</div>
+                <div class="item"><span class="ui blue sha label">${commit.hash_code.substring(0, 10)}</span></div>
+            </div>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+    }
+
+    static _parseCommitDiffList = (repoPath: RepoPath, patchTextList: string[]) => {
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        // 总加行树
+        let additions: number = 0
+        // 总减行树
+        let deletions: number = 0
+        let file: string = ``
+        for (let text of patchTextList) {
+            let lines = text.split('\n')
+            log("lines-------", lines)
+
+            // 文件名在第一行
+            let fileName = lines[0].split(' ')[2].split('/').splice(1).join('/')
+            // 找到文件行号显示加减 @@ -0,0 +1 @@
+            let tagOffset: number = -1
+            let tagLine: string
+            for (let offset = 0; offset < lines.length; offset++) {
+                if (lines[offset].startsWith('@@')) {
+                    tagOffset = offset
+                    tagLine = lines[offset]
+                    break
+                }
+            }
+
+            let fileTemplate: string = ``
+            let diffCounter: string
+            // 等于 -1 说明没有内容显示
+            if (tagOffset == -1) {
+                diffCounter = 'BIN'
+            } else {
+                // 从下一行开始就是文件
+                let addOffset: number = 0
+                let delOffset: number = 0
+                let fileLines: string[] = lines.splice(tagOffset)
+                let i: number = -1
+                for (let l of fileLines) {
+                    i ++
+                    if (l.startsWith('@@')) {
+                        fileTemplate += `
+                            <tr class="tag-code nl-0 ol-0">
+                                <td colspan="2" class="lines-num"></td>
+                                <td class="lines-code">
+                                    <pre><code class="language-nohighlight">${tagLine}</code></pre>
+                                </td>
+                            </tr>
+                        `
+                    } else if (l.startsWith('+')) {
+                        addOffset ++
+                        fileTemplate += `
+                            <tr class="add-code nl-${i} ol-${i}">
+                                <td class="lines-num lines-num-old"></td>
+                                <td class="lines-num lines-num-new" id="diff-" data-line-number="${i}"></td>
+                                <td class="lines-code">
+                                    <pre><code class="language-nohighlight">${l}</code></pre>
+                                </td>
+                            </tr>
+                        `
+                    } else if (l.startsWith('-')) {
+                        delOffset ++
+                        fileTemplate += `
+                            <tr class="del-code nl-${i} ol-${i}">
+                                <td class="lines-num lines-num-old"></td>
+                                <td class="lines-num lines-num-new" id="diff-" data-line-number="${i}"></td>
+                                <td class="lines-code">
+                                    <pre><code class="language-nohighlight">${l}</code></pre>
+                                </td>
+                            </tr>
+                        `
+                    } else {
+                        fileTemplate += `
+                            <tr class="same-code nl-${i} ol-${i}">
+                                <td class="lines-num lines-num-old"></td>
+                                <td class="lines-num lines-num-new" id="diff-" data-line-number="${i}"></td>
+                                <td class="lines-code">
+                                    <pre><code class="language-nohighlight">${l}</code></pre>
+                                </td>
+                            </tr>
+                        `
+                    }
+                }
+                diffCounter = `
+                    <span class="add" data-line="${addOffset}">+ ${addOffset}</span>
+                            <span class="bar">
+                                <span class="pull-left add" style="width: ${addOffset / (addOffset + delOffset) * 100}%;"></span>
+                                <span class="pull-left del"></span>
+                            </span>
+                    <span class="del" data-line="${delOffset}">- ${delOffset}</span>
+                `
+                additions += addOffset
+                deletions += delOffset
+            }
+            file += `
+                <div class="diff-file-box diff-box file-content tab-size-8" id="diff-9e7513f77c131687500db2d3e204a0b076ab0825">
+                    <h4 class="ui top attached normal header">
+                        <div class="diff-counter count ui left">
+                            ${diffCounter}
+                        </div>
+                        <span class="file">${fileName}</span>
+                        <div class="ui right">
+                            <a class="ui basic grey tiny button" rel="nofollow" data-path="/${username}/${repoName}/src/${username}/${fileName}">View File</a>
+                        </div>
+                    </h4>
+                    <div class="ui unstackable attached table segment">
+                        <div class="file-body file-code code-view code-diff">
+                            <table>
+                                <tbody>
+                                    ${fileTemplate}
+                                </tbody>    
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `
+        }
+
+        // 头部
+        let t: string = `
+            <div class="diff-detail-box diff-box">
+                <div>
+                    <i class="fa fa-retweet"></i>
+                    <strong> ${patchTextList.length} changed files</strong> with <strong>${additions} additions</strong> and <strong>${deletions} deletions</strong>
+                    <div class="ui right">
+                        <a class="ui tiny basic toggle button" href="?style=split">Split View</a>
+                        <a class="ui tiny basic toggle button" data-target="#diff-files">Show Diff Stats</a>
+                    </div>
+                </div>
+
+                <ol class="detail-files hide" id="diff-files">            
+                    <li>
+                        <div class="diff-counter count pull-right">
+                            <span class="add" data-line="0">0</span>
+                            <span class="bar">
+                                <span class="pull-left add" style="width: 0%;"></span>
+                                <span class="pull-left del"></span>
+                            </span>
+                            <span class="del" data-line="3">3</span>
+                        </div>
+                        
+                        <span class="status modify poping up" data-content="modify" data-variation="inverted tiny" data-position="right center">&nbsp;</span>
+                        <a class="file" href="#diff-e4539619761dcf92bb1ab70c4b397984b931cf6b">test1.txt</a>
+                    </li>
+
+                    <li>
+                        <div class="diff-counter count pull-right">
+                            <span class="add" data-line="1">1</span>
+                            <span class="bar">
+                                <span class="pull-left add" style="width: 100%;"></span>
+                                <span class="pull-left del"></span>
+                            </span>
+                            <span class="del" data-line="0">0</span>
+                        </div>
+                        
+                        <span class="status modify poping up" data-content="modify" data-variation="inverted tiny" data-position="right center">&nbsp;</span>
+                        <a class="file" href="#diff-a52d85aaf33af8bbaf27d40985cd9065356a061c">v2.txt</a>
+                    </li>
+                </ol>
+            </div>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+        appendHtml(this.bodyWrapperSel, file)
+    //
+    }
 }
 
 class RepoEvent {
@@ -1376,6 +1609,7 @@ class ActionRepo extends Action {
             'commits': RepoContainer.parseCommits,
             'branches': RepoContainer.parseBranches,
             'releases': RepoContainer.parseReleases,
+            'hashDiff': RepoContainer.parseHashDiff,
         },
     }
 }

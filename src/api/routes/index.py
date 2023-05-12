@@ -1,3 +1,4 @@
+import typing as t
 from flask import (
     Blueprint,
     redirect,
@@ -6,6 +7,7 @@ from flask import (
 from flask_httpauth import HTTPBasicAuth
 
 from api.api_model.enum import EnumCheckoutType
+from api.api_model.index import ResponseRepoCommitHash
 from api.routes import login_required, current_user
 from models.user import User
 from services.handle import ServiceRepoHandle
@@ -136,7 +138,7 @@ def repo_detail(username: str, repo_name: str):
     if 'suffix' in request.args:
         suffix = request.args.get('suffix')
         suffix_type = request.args.get('suffixType')
-        response = ServiceRepo.repo_suffix(
+        response: t.Dict = ServiceRepo.repo_suffix(
             repo_name=repo_name,
             user=user,
             checkout_type=checkout_type,
@@ -145,7 +147,7 @@ def repo_detail(username: str, repo_name: str):
             suffix_type=suffix_type,
         )
     else:
-        response = ServiceRepo.repo_detail(
+        response: t.Dict = ServiceRepo.repo_detail(
             repo_name=repo_name,
             user=user,
             checkout_type=checkout_type,
@@ -159,11 +161,11 @@ def repo_detail(username: str, repo_name: str):
 @login_required
 def repo_branches(username: str, repo_name: str, event: str):
     user = current_user()
-    response = ServiceRepo.repo_branches(repo_name=repo_name, user=user)
+    response: t.Dict = ServiceRepo.repo_branches(repo_name=repo_name, user=user)
     return response
 
 
-# 仓库 commit 列表
+# 仓库 commits 列表
 @main.route('/<username>/<repo_name>/commits', methods=['GET'])
 @login_required
 def repo_commits(username: str, repo_name: str):
@@ -175,11 +177,25 @@ def repo_commits(username: str, repo_name: str):
     if checkout_type == EnumCheckoutType.tag.value:
         checkout_name = f'refs/tags/{checkout_name}'
 
-    response = ServiceRepo.repo_commits(
+    response: t.Dict = ServiceRepo.repo_commits(
         repo_name=repo_name,
         user=user,
         checkout_type=checkout_type,
         checkout_name=checkout_name,
+    )
+    return response
+
+
+# 仓库 commit hash diff，对比当前 hash 和 parent hash 的区别
+@main.route('/<username>/<repo_name>/commit/<hash_code>', methods=['GET'])
+@login_required
+def repo_commit_hash(username: str, repo_name: str, hash_code: str):
+    user = current_user()
+
+    response: t.Dict = ServiceRepo.repo_commit_hash(
+        repo_name=repo_name,
+        user=user,
+        hash_code=hash_code,
     )
     return response
 
@@ -189,7 +205,7 @@ def repo_commits(username: str, repo_name: str):
 @login_required
 def repo_releases(username: str, repo_name: str):
     user = current_user()
-    response = ServiceRepo.repo_releases(
+    response: t.Dict = ServiceRepo.repo_releases(
         repo_name=repo_name,
         user=user,
     )
