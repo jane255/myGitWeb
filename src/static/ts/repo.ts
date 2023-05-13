@@ -497,9 +497,15 @@ class RepoContainer {
             for (let i = 0; i < length; i++) {
                 let t: string
                 let p: string = pathSuffixList[i]
-                suffix += `/${p}`
+                // 设置路径拼接
+                if (i == 0) {
+                    suffix += p
+                } else {
+                    suffix += `/${p}`
+                }
                 let r: RepoPath = repoPath
                 r.suffix = suffix
+                r.suffixType = EnumFileType.dir
                 let dataPath = self.pathForRepo(r)
                 if (i + 1 == length) {
                     t = `
@@ -701,7 +707,7 @@ class RepoContainer {
                     </td>
                     <td class="message collapsing has-emoji">
                         <a rel="nofollow" class="ui sha label"
-                           data-path="/${username}/${repoName}/commit/${hashCode}" data-action="hashDiff">${hashCode.substring(0, 10)}</a>
+                           data-path="/${username}/${repoName}/commit/${hashCode}?checkoutType=${r.checkoutType}&checkoutName=${r.checkoutName}" data-action="hashDiff">${hashCode.substring(0, 10)}</a>
                         ${commit}
                     </td>
                     <td class="text grey right age"><span>${ct}</span></td>
@@ -1307,6 +1313,9 @@ class RepoContainer {
         let additions: number = 0
         // 总减行树
         let deletions: number = 0
+        // 文件名隐藏总览
+        let diffFiles: string = ``
+        // 文件展示内容
         let file: string = ``
         for (let text of patchTextList) {
             let lines = text.split('\n')
@@ -1322,21 +1331,22 @@ class RepoContainer {
                     break
                 }
             }
-
+            // 文件内容
             let fileTemplate: string = ``
+            // 加减血条
             let diffCounter: string
             // 等于 -1 说明没有内容显示
+            let addOffset: number = 0
+            let delOffset: number = 0
             if (tagOffset == -1) {
-                diffCounter = 'BIN'
+                // diffCounter = 'BIN'
             } else {
                 // 从下一行开始就是文件
-                let addOffset: number = 0
-                let delOffset: number = 0
                 let fileLines: string[] = lines.splice(tagOffset)
                 let i: number = -1
                 for (let l of fileLines) {
                     l = escapeHTML(l)
-                    i ++
+                    i++
                     if (l.length === 0) {
 
                     } else if (l.startsWith('@@')) {
@@ -1349,7 +1359,7 @@ class RepoContainer {
                             </tr>
                         `
                     } else if (l.startsWith('+')) {
-                        addOffset ++
+                        addOffset++
                         fileTemplate += `
                             <tr class="add-code nl-${i} ol-${i}">
                                 <td class="lines-num lines-num-old"></td>
@@ -1360,7 +1370,7 @@ class RepoContainer {
                             </tr>
                         `
                     } else if (l.startsWith('-')) {
-                        delOffset ++
+                        delOffset++
                         fileTemplate += `
                             <tr class="del-code nl-${i} ol-${i}">
                                 <td class="lines-num lines-num-old"></td>
@@ -1382,17 +1392,50 @@ class RepoContainer {
                         `
                     }
                 }
-                diffCounter = `
-                    <span class="add" data-line="${addOffset}">+ ${addOffset}</span>
-                            <span class="bar">
-                                <span class="pull-left add" style="width: ${addOffset / (addOffset + delOffset) * 100}%;"></span>
-                                <span class="pull-left del"></span>
-                            </span>
-                    <span class="del" data-line="${delOffset}">- ${delOffset}</span>
-                `
-                additions += addOffset
-                deletions += delOffset
             }
+            let width: number = addOffset / (addOffset + delOffset) * 100
+            diffCounter = `
+                <span class="add" data-line="${addOffset}">+ ${addOffset}</span>
+                        <span class="bar">
+                            <span class="pull-left add" style="width: ${width}%;"></span>
+                            <span class="pull-left del"></span>
+                        </span>
+                <span class="del" data-line="${delOffset}">- ${delOffset}</span>
+            `
+            // 设置文件隐藏总览的前面小方块颜色
+            let spanStatus: string
+            if (addOffset === 0 && delOffset == 0) {
+                spanStatus = `
+                    <span class="status add poping up" data-content="add" data-variation="inverted tiny" data-position="right center">&nbsp;</span>
+                `
+            } else {
+                spanStatus = `
+                    <span class="status modify poping up" data-content="modify" data-variation="inverted tiny" data-position="right center">&nbsp;</span>
+                `
+            }
+            diffFiles += `
+                <li>
+                    <div class="diff-counter count pull-right">
+                        <span class="add" data-line="${addOffset}">${addOffset}</span>
+                        <span class="bar">
+                            <span class="pull-left add" style="width: ${width}%;"></span>
+                            <span class="pull-left del"></span>
+                        </span>
+                        <span class="del" data-line="${delOffset}">${delOffset}</span>
+                    </div>
+                    ${spanStatus}                    
+                    <a class="file" href="#diff-e4539619761dcf92bb1ab70c4b397984b931cf6b">${fileName}</a>
+                </li>
+            `
+            additions += addOffset
+            deletions += delOffset
+
+            // 设置跳转链接
+            let r = {...repoPath}
+            r.target = 'src'
+            r.suffix = fileName
+            r.suffixType = EnumFileType.file
+            let dataPath = this.pathForRepo(r)
             file += `
                 <div class="diff-file-box diff-box file-content tab-size-8" id="diff-9e7513f77c131687500db2d3e204a0b076ab0825">
                     <h4 class="ui top attached normal header">
@@ -1401,7 +1444,7 @@ class RepoContainer {
                         </div>
                         <span class="file">${fileName}</span>
                         <div class="ui right">
-                            <a class="ui basic grey tiny button" rel="nofollow" data-path="/${username}/${repoName}/src/${username}/${fileName}">View File</a>
+                            <a class="ui basic grey tiny button" rel="nofollow" data-path="${dataPath}" data-action="enter">View File</a>
                         </div>
                     </h4>
                     <div class="ui unstackable attached table segment">
@@ -1426,38 +1469,12 @@ class RepoContainer {
                     <strong> ${patchTextList.length} changed files</strong> with <strong>${additions} additions</strong> and <strong>${deletions} deletions</strong>
                     <div class="ui right">
                         <a class="ui tiny basic toggle button" href="?style=split">Split View</a>
-                        <a class="ui tiny basic toggle button" data-target="#diff-files">Show Diff Stats</a>
+                        <a class="ui tiny basic toggle button" data-target="#diff-files" data-action="showDiffStats">Show Diff Stats</a>
                     </div>
                 </div>
 
                 <ol class="detail-files hide" id="diff-files">            
-                    <li>
-                        <div class="diff-counter count pull-right">
-                            <span class="add" data-line="0">0</span>
-                            <span class="bar">
-                                <span class="pull-left add" style="width: 0%;"></span>
-                                <span class="pull-left del"></span>
-                            </span>
-                            <span class="del" data-line="3">3</span>
-                        </div>
-                        
-                        <span class="status modify poping up" data-content="modify" data-variation="inverted tiny" data-position="right center">&nbsp;</span>
-                        <a class="file" href="#diff-e4539619761dcf92bb1ab70c4b397984b931cf6b">test1.txt</a>
-                    </li>
-
-                    <li>
-                        <div class="diff-counter count pull-right">
-                            <span class="add" data-line="1">1</span>
-                            <span class="bar">
-                                <span class="pull-left add" style="width: 100%;"></span>
-                                <span class="pull-left del"></span>
-                            </span>
-                            <span class="del" data-line="0">0</span>
-                        </div>
-                        
-                        <span class="status modify poping up" data-content="modify" data-variation="inverted tiny" data-position="right center">&nbsp;</span>
-                        <a class="file" href="#diff-a52d85aaf33af8bbaf27d40985cd9065356a061c">v2.txt</a>
-                    </li>
+                    ${diffFiles}
                 </ol>
             </div>
         `
@@ -1470,7 +1487,6 @@ class RepoContainer {
 class RepoEvent {
 
     static enter = (target: HTMLSelectElement) => {
-        log("enter click path --- ", target)
         let path = target.dataset.path
         // 说明访问的是主路径
         if (path.includes('suffix')) {
@@ -1505,7 +1521,6 @@ class RepoEvent {
     }
 
     static quit = (target: HTMLSelectElement) => {
-        log("quit click path --- ", target)
         let path: string = target.dataset.path
         if (path.includes('suffix')) {
             let repoPath = RepoContainer.repoForPath(path)
@@ -1529,7 +1544,6 @@ class RepoEvent {
 
     // 监听浮动选择器
     static visible = () => {
-        log("点击到了 visible 事件")
         //
         let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
         floatingBranchSel.className += ' active visible'
@@ -1544,7 +1558,6 @@ class RepoEvent {
 
     // 监听浮动选择器
     static checkout = (target: HTMLSelectElement) => {
-        log("checkout click path --- ", target)
         let path: string = target.dataset.path
         let arg: string = path.split('?')[0].split('/')[3]
         if (arg === 'src') {
@@ -1583,7 +1596,6 @@ class RepoEvent {
 
     // 监听 branch 和 tag 显示列表
     static parseScrolling = (target: HTMLSelectElement) => {
-        log("parseScrolling click target --- ", target)
         // 设置文字变黑
         target.className += ' black'
         // 设置对面文字变蓝
@@ -1600,6 +1612,16 @@ class RepoEvent {
         let listSel = e(`${listId}`)
         listSel.style.display = 'none'
     }
+
+    static showDiffStats = (target: HTMLSelectElement) => {
+        let targetId = target.dataset.target
+        let sel = e(`${targetId}`)
+        if (sel.style.display === 'none' || sel.style.display.length == 0) {
+            sel.style.display = 'block'
+        } else {
+            sel.style.display = 'none'
+        }
+    }
 }
 
 class ActionRepo extends Action {
@@ -1610,6 +1632,7 @@ class ActionRepo extends Action {
             'visible': RepoEvent.visible,
             'checkout': RepoEvent.checkout,
             'scrolling': RepoEvent.parseScrolling,
+            'showDiffStats': RepoEvent.showDiffStats,
         //
             'commits': RepoContainer.parseCommits,
             'branches': RepoContainer.parseBranches,
