@@ -838,11 +838,12 @@ class RepoContainer {
         let liTemplate: string = ``
         for (let i = 0; i < contentList.length; i++) {
             let offset = (i+1).toString()
+            let s: string = escapeHTML(contentList[i])
             spanTemplate += `
                 <span id="L${offset}">${offset}</span>
             `
             liTemplate += `
-                <li class="L${offset}" rel="L${offset}"></li>
+                <li class="L${offset}" rel="L${offset}">${s}</li>
             `
         }
         let sel = e(`#file-content`)
@@ -856,13 +857,13 @@ class RepoContainer {
                                       ${spanTemplate}
                                 </td>
                                 <td class="lines-code">
-                                    <pre>
+<!--                                    <pre>-->
                                         <code class="nohighlight">
                                             <ol class="linenums">
                                                 ${liTemplate}
                                             </ol>
                                         </code>
-                                    </pre>
+<!--                                    </pre>-->
                                 </td>
                             </tr>
                         </tbody>
@@ -872,10 +873,10 @@ class RepoContainer {
         `
         appendHtml(sel, t)
         // 这时候才插入文本，为了保证文本不被执行（假设文本里有 html 代码
-        for (let i = 0; i < contentList.length; i++) {
-            let liSel = e(`.L${(i + 1).toString()}`)
-            liSel.innerText = contentList[i]
-        }
+        // for (let i = 0; i < contentList.length; i++) {
+        //     let liSel = e(`.L${(i + 1).toString()}`)
+        //     liSel.innerText = escapeHTML(contentList[i])
+        // }
     }
 
     // 进入 commits
@@ -1257,16 +1258,14 @@ class RepoContainer {
         let parent: string = ``
         if (parentId !== null) {
             parent += `
-                <div class="ui right">
-                    <div class="ui horizontal list">
                         <div class="item">
                             parent
                         </div>
-                    <div class="item">
-                    <a class="ui blue sha label" data-path="/${username}/${repoName}/commit/${parentId}" data-action="hashDiff">
+                        <div class="item">
+                        <a class="ui blue sha label" data-path="/${username}/${repoName}/commit/${parentId}" data-action="hashDiff">
                         ${parentId.substring(0, 10)}
-                    </a>
-                </div>
+                        </a>
+                        </div>
             `
         }
         let t = `
@@ -1288,11 +1287,15 @@ class RepoContainer {
                         ${commit.commit_time}
                     </span>
                 </span>
-                    ${parent}
+                <div class="ui right">
+                    <div class="ui horizontal list">
+                        ${parent}
             
-                <div class="item">commit</div>
-                <div class="item"><span class="ui blue sha label">${commit.hash_code.substring(0, 10)}</span></div>
-            </div>
+                    <div class="item">commit</div>
+                    <div class="item"><span class="ui blue sha label">${commit.hash_code.substring(0, 10)}</span></div>
+                    </div>
+                </div>
+           </div>
         `
         appendHtml(this.bodyWrapperSel, t)
     }
@@ -1307,8 +1310,6 @@ class RepoContainer {
         let file: string = ``
         for (let text of patchTextList) {
             let lines = text.split('\n')
-            log("lines-------", lines)
-
             // 文件名在第一行
             let fileName = lines[0].split(' ')[2].split('/').splice(1).join('/')
             // 找到文件行号显示加减 @@ -0,0 +1 @@
@@ -1334,8 +1335,11 @@ class RepoContainer {
                 let fileLines: string[] = lines.splice(tagOffset)
                 let i: number = -1
                 for (let l of fileLines) {
+                    l = escapeHTML(l)
                     i ++
-                    if (l.startsWith('@@')) {
+                    if (l.length === 0) {
+
+                    } else if (l.startsWith('@@')) {
                         fileTemplate += `
                             <tr class="tag-code nl-0 ol-0">
                                 <td colspan="2" class="lines-num"></td>
@@ -1410,6 +1414,7 @@ class RepoContainer {
                         </div>
                     </div>
                 </div>
+                <br>
             `
         }
 

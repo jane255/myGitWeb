@@ -580,11 +580,14 @@ class ServiceRepo:
             # repo[parent_id] 可以通过该 id 找到仓库里的对象
             parent = repo[parent_id]
         else:
-            parent = None
             parent_id = None
+            # git diff 4b825dc642cb6eb9a060e54bf8d69288fbee4904 HEAD
+            # 4b825dc642cb6eb9a060e54bf8d69288fbee4904 is the id of the "empty tree" in Git
+            # and it's always available in every repository.
+            parent = repo.get('4b825dc642cb6eb9a060e54bf8d69288fbee4904')
         # 返回的对象可能是 pygit2.Blob、pygit2.Tree、pygit2.Commit 和 pygit2.Tag
         # 此处预期是返回 pygit2.Commit
-        assert isinstance(parent, pygit2.Commit)
+        # assert isinstance(parent, pygit2.Commit)
         # 相当于命令 git diff parent.hex commit.hex
         diff = repo.diff(parent, commit)
         # repo.diff 返回 pygit2.Diff 对象

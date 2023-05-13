@@ -1,8 +1,8 @@
 const log = console.log.bind(console)
 
-const e = (sel: string) : HTMLSelectElement => document.querySelector(sel)
+const e = (sel: string): HTMLSelectElement => document.querySelector(sel)
 
-const es = (sel: string) : NodeListOf<HTMLSelectElement> => document.querySelectorAll(sel)
+const es = (sel: string): NodeListOf<HTMLSelectElement> => document.querySelectorAll(sel)
 
 const appendHtml = (element: HTMLSelectElement, html: string) => {
     element.insertAdjacentHTML('beforeend', html)
@@ -34,11 +34,16 @@ class GuaObject {
 
     }
 
-    static new(...args: any[])  {
+    static new(...args: any[]) {
         return new this(...args)
     }
 }
 
-const currentUsername = () : string => e(`.class-username`).innerText
+const currentUsername = (): string => e(`.class-username`).innerText
 
-const currentRepoName = () : string => e(`.class-repo-body`).dataset.repo
+const currentRepoName = (): string => e(`.class-repo-body`).dataset.repo
+
+// 转义 html 脚本
+const escapeHTML = (s): string => {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;")
+}
