@@ -47,3 +47,21 @@ const currentRepoName = (): string => e(`.class-repo-body`).dataset.repo
 const escapeHTML = (s): string => {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;")
 }
+
+// 解析 diff 的 变更总行数
+// 比如 @@ -1,2 +1,2 @@，旧行里是 -1,2，也就是 2 行，新行里是 +1,2，也是两行
+const parseDiffLinesNum = (lineLimit: string) => {
+    if (lineLimit.startsWith('+') || lineLimit.startsWith('-')) {
+        lineLimit = lineLimit.substring(1)
+    }
+    let start: number
+    let end: number
+    if (lineLimit.includes(',')) {
+        let lineLimitList = lineLimit.split(',')
+        start = parseInt(lineLimitList[0])
+        end = parseInt(lineLimitList[1])
+    } else
+        start = parseInt(lineLimit)
+        end = 0
+    return start
+}

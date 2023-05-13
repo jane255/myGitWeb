@@ -1246,16 +1246,21 @@ class RepoContainer {
             self._clearBodyWrapper()
         //    设置布局
             self._setRepositoryCommitDiff()
+            self._setBodyWrapperCommitDiff()
         //    增加 header
             self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
         //    增加 list
-            self._parseCommitDiffList(repoPath, resp.patch_text_list)
+            self._parseCommitDiffList(repoPath, resp.patch_text_list, path)
         })
     }
 
     static _setRepositoryCommitDiff = () => {
         let repositorySel = e(`.repository`)
         repositorySel.className = 'repository diff'
+    }
+
+    static _setBodyWrapperCommitDiff = () => {
+        this.bodyWrapperSel.className = 'ui container body-wrapper'
     }
 
     static _parseCommitDiffHeader = (repoPath: RepoPath, commit: LatestCommitItem, parentId: string) => {
@@ -1306,9 +1311,7 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _parseCommitDiffList = (repoPath: RepoPath, patchTextList: string[]) => {
-        let username: string = repoPath.username
-        let repoName: string = repoPath.repoName
+    static _parseCommitDiffList = (repoPath: RepoPath, patchTextList: string[], path: string, isSplitView: boolean=false) => {
         // 总加行树
         let additions: number = 0
         // 总减行树
@@ -1317,6 +1320,10 @@ class RepoContainer {
         let diffFiles: string = ``
         // 文件展示内容
         let file: string = ``
+        // 旧代码行数开始
+        let linesNumOld: number = 0
+        // 新代码行数开始
+        let linesNumNew: number = 0
         for (let text of patchTextList) {
             let lines = text.split('\n')
             // 文件名在第一行
@@ -1325,9 +1332,14 @@ class RepoContainer {
             let tagOffset: number = -1
             let tagLine: string
             for (let offset = 0; offset < lines.length; offset++) {
-                if (lines[offset].startsWith('@@')) {
+                let line: string = lines[offset]
+                if (line.startsWith('@@')) {
                     tagOffset = offset
-                    tagLine = lines[offset]
+                    tagLine = line
+                    // 解析旧代码行数 和 新代码行数
+                    let lineList: string[] = line.split(' ')
+                    linesNumOld = parseDiffLinesNum(lineList[1])
+                    linesNumNew = parseDiffLinesNum(lineList[2])
                     break
                 }
             }
@@ -1350,7 +1362,17 @@ class RepoContainer {
                     if (l.length === 0) {
 
                     } else if (l.startsWith('@@')) {
-                        fileTemplate += `
+                        if (isSplitView) {
+                            fileTemplate += `
+                            <tr class="tag-code nl-0 ol-0">
+                               <td class="lines-num"></td>
+                                <td colspan="3" class="lines-code">
+                                <pre><code class="language-nohighlight">${tagLine}</code></pre>
+                                </td>
+                            </tr>
+                        `
+                        } else {
+                            fileTemplate += `
                             <tr class="tag-code nl-0 ol-0">
                                 <td colspan="2" class="lines-num"></td>
                                 <td class="lines-code">
@@ -1358,36 +1380,32 @@ class RepoContainer {
                                 </td>
                             </tr>
                         `
+                        }
                     } else if (l.startsWith('+')) {
                         addOffset++
+                        let code: string = this.diffListCodeForSplitView(i, l, isSplitView, linesNumOld, linesNumNew)
+                        linesNumNew ++
                         fileTemplate += `
                             <tr class="add-code nl-${i} ol-${i}">
-                                <td class="lines-num lines-num-old"></td>
-                                <td class="lines-num lines-num-new" id="diff-" data-line-number="${i}"></td>
-                                <td class="lines-code">
-                                    <pre><code class="language-nohighlight">${l}</code></pre>
-                                </td>
+                                ${code}
                             </tr>
                         `
                     } else if (l.startsWith('-')) {
                         delOffset++
+                        let code: string = this.diffListCodeForSplitView(i, l, isSplitView, linesNumOld, linesNumNew)
+                        linesNumOld ++
                         fileTemplate += `
                             <tr class="del-code nl-${i} ol-${i}">
-                                <td class="lines-num lines-num-old"></td>
-                                <td class="lines-num lines-num-new" id="diff-" data-line-number="${i}"></td>
-                                <td class="lines-code">
-                                    <pre><code class="language-nohighlight">${l}</code></pre>
-                                </td>
+                                ${code}
                             </tr>
                         `
                     } else {
+                        let code: string = this.diffListCodeForSplitView(i, l, isSplitView, linesNumOld, linesNumNew)
+                        linesNumNew ++
+                        linesNumOld ++
                         fileTemplate += `
                             <tr class="same-code nl-${i} ol-${i}">
-                                <td class="lines-num lines-num-old"></td>
-                                <td class="lines-num lines-num-new" id="diff-" data-line-number="${i}"></td>
-                                <td class="lines-code">
-                                    <pre><code class="language-nohighlight">${l}</code></pre>
-                                </td>
+                                ${code}
                             </tr>
                         `
                     }
@@ -1468,7 +1486,7 @@ class RepoContainer {
                     <i class="fa fa-retweet"></i>
                     <strong> ${patchTextList.length} changed files</strong> with <strong>${additions} additions</strong> and <strong>${deletions} deletions</strong>
                     <div class="ui right">
-                        <a class="ui tiny basic toggle button" href="?style=split">Split View</a>
+                        <a class="ui tiny basic toggle button" data-path="${path}" data-action="splitView">Split View</a>
                         <a class="ui tiny basic toggle button" data-target="#diff-files" data-action="showDiffStats">Show Diff Stats</a>
                     </div>
                 </div>
@@ -1482,6 +1500,104 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, file)
     //
     }
+
+    static diffListCodeForSplitView(index: number, line: string, isSplitView: boolean, linesNumOld: number, linesNumNew: number) {
+        if (isSplitView) {
+            if (line.startsWith('+')) {
+                return `
+                    <td class="lines-num lines-num-old" id="diff-">
+                        </td>
+                    <td class="lines-code halfwidth">
+                        <pre><code class="wrap language-nohighlight"></code></pre>
+                    </td>
+                    <td class="lines-num lines-num-new" id="diff-" data-line-number="${linesNumNew}">
+                    </td>
+                    <td class="lines-code halfwidth">
+                        <pre><code class="wrap language-nohighlight"> ${line}</code></pre>
+                    </td>
+                `
+            } else if (line.startsWith('-')) {
+                return `
+                    <td class="lines-num lines-num-old" id="diff-" data-line-number="${linesNumOld}">
+                        </td>
+                    <td class="lines-code halfwidth">
+                        <pre><code class="wrap language-nohighlight"> ${line}</code></pre>
+                    </td>
+                    <td class="lines-num lines-num-new" id="diff-">
+                    </td>
+                    <td class="lines-code halfwidth">
+                        <pre><code class="wrap language-nohighlight"></code></pre>
+                    </td>
+                `
+            } else {
+                return `
+                    <td class="lines-num lines-num-old" id="diff-" data-line-number="${linesNumOld}">
+                        </td>
+                    <td class="lines-code halfwidth">
+                        <pre><code class="wrap language-nohighlight">${line}</code></pre>
+                    </td>
+                    <td class="lines-num lines-num-new" id="diff-" data-line-number="${linesNumNew}">
+                    </td>
+                    <td class="lines-code halfwidth">
+                        <pre><code class="wrap language-nohighlight"> ${line}</code></pre>
+                    </td>
+                `
+            }
+
+        } else {
+            if (line.startsWith('+')) {
+                return `
+                    <td class="lines-num lines-num-old"></td>
+                    <td class="lines-num lines-num-new" id="diff-" data-line-number="${linesNumNew}"></td>
+                    <td class="lines-code">
+                        <pre><code class="language-nohighlight">${line}</code></pre>
+                    </td>
+                `
+            } else if (line.startsWith('-')) {
+                return `
+                    <td class="lines-num lines-num-old" data-line-number="${linesNumOld}"></td>
+                    <td class="lines-num lines-num-new" id="diff-"></td>
+                    <td class="lines-code">
+                        <pre><code class="language-nohighlight">${line}</code></pre>
+                    </td>
+                `
+            } else {
+                return `
+                    <td class="lines-num lines-num-old" data-line-number="${linesNumOld}"></td>
+                    <td class="lines-num lines-num-new" id="diff-" data-line-number="${linesNumNew}"></td>
+                    <td class="lines-code">
+                        <pre><code class="language-nohighlight">${line}</code></pre>
+                    </td>
+                `
+            }
+        }
+    }
+
+    static splitView = (target) => {
+        let self = this
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoCommitHash = response.data
+            log("response data", resp)
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+        //    设置布局
+            self._setRepositoryCommitDiff()
+        //    设置 body-wrapper 格局
+            self._setBodyWrapperSplitView()
+           // 增加 header
+            self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
+        //    增加 list
+            self._parseCommitDiffList(repoPath, resp.patch_text_list, path, true)
+        })
+    }
+
+    static _setBodyWrapperSplitView = () => {
+        this.bodyWrapperSel.className += ' fluid padded'
+    }
+
 }
 
 class RepoEvent {
@@ -1638,6 +1754,7 @@ class ActionRepo extends Action {
             'branches': RepoContainer.parseBranches,
             'releases': RepoContainer.parseReleases,
             'hashDiff': RepoContainer.parseHashDiff,
+            'splitView': RepoContainer.splitView,
         },
     }
 }

@@ -82,17 +82,22 @@ class ServiceRepo:
                 checkout_name=checkout_name,
             ).dict()
             # 最新提交
-            latest_commit: LatestCommitItem = cls.parse_latest_commit(
+            latest_commit: LatestCommitItem = cls.repo_latest_commit(
                 repo_name=repo_name,
                 user_id=user.id,
                 checkout_type=checkout_type,
                 checkout_name=checkout_name,
-                is_dir=True,
             )
             if latest_commit is not None:
                 resp.latest_commit = latest_commit.dict()
         return resp.dict()
 
+    @classmethod
+    def repo_latest_commit(cls, repo_name: str, user_id: int, checkout_type: str, checkout_name: str):
+        commit = cls.commit_for_checkout_type(repo_name, user_id, checkout_type, checkout_name)
+        # 获取提交信息
+        commit_item = cls.parse_commit_item(commit)
+        return commit_item
     # 获取仓库的文件列表
     # path: 裸仓库路径
     # checkout_name: 分支名称, 例如 master
