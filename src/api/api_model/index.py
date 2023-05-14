@@ -124,6 +124,12 @@ class ResponseRepoCommitHash(BaseModel):
     patch_text_list: t.List[str]
 
 
+class CompareCommitsItems(BaseModel):
+    start: str
+    end: str
+    commits: t.List[LatestCommitItem]
+
+
 # /repo/compare
 class ResponseRepoCompare(BaseModel):
     """结构"""
@@ -131,4 +137,4 @@ class ResponseRepoCompare(BaseModel):
     compare: str
     patch_text_list: t.List[str]
     branch_list: t.List[str]
-
+    commits_items: t.Optional[CompareCommitsItems]

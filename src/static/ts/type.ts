@@ -153,12 +153,19 @@ interface ResponseRepoCommitHash {
     patch_text_list: string[]
 }
 
+interface CompareCommitsItems {
+    start: string
+    end: string
+    commits: LatestCommitItem[]
+}
+
 // # /repo/compare
 interface ResponseRepoCompare {
     base: string
     compare: string
     patch_text_list: string[]
     branch_list: string[]
+    commits_items: CompareCommitsItems
 }
 
 

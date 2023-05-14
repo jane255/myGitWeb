@@ -924,12 +924,10 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _parseCommitsTable = (path: string, commit_list: LatestCommitItem[]) => {
+    static _parseCommitsTable = (path: string, commit_list: LatestCommitItem[], isCompare: boolean=false) => {
         let repoPath: RepoPath = this.repoForPath(path)
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
-        let checkoutName: string = repoPath.checkoutName
-        let arg: string = repoPath.target
         let tr: string = ``
         for (let item of commit_list) {
             tr += `
@@ -968,7 +966,8 @@ class RepoContainer {
             </table>
             </div>
         `
-        appendHtml(this.bodyWrapperSel, t)
+        let sel = isCompare ? e(`.sixteen-wide-column-page-grid`) : this.bodyWrapperSel
+        appendHtml(sel, t)
     }
 
     // ------------------ parseBranches ---------------------------------
@@ -1595,10 +1594,31 @@ class RepoContainer {
         </div>
         `
         appendHtml(this.bodyWrapperSel, t)
-    //
+    // 展示文件差异
         if (response.patch_text_list.length > 0) {
+                //    展示 commits
+            this._parseCompareCommits(repoPath, response.commits_items)
             this._parseCompareSegment(response.patch_text_list, repoPath, path, isSplitView)
         }
+    }
+
+    static _parseCompareCommits(repoPath: RepoPath, commitsItems: CompareCommitsItems) {
+        let username = repoPath.username
+        let repoName = repoPath.repoName
+        let t = `
+            <h4 class="ui top attached header">
+                Commits
+                <a data-path="/${username}/${repoName}/commit/${commitsItems.start}" data-action="hashDiff" class="ui green sha label">
+                    ${commitsItems.start.substring(0, 10)}
+                </a> 
+                ... 
+                <a href="/${username}/${repoName}/commit/${commitsItems.end}" data-action="hashDiff" class="ui green sha label">
+                    ${commitsItems.end.substring(0, 10)}
+                </a>
+            </h4>
+        `
+        appendHtml(e(`.sixteen-wide-column-page-grid`), t)
+        this._parseCommitsTable(repoPath.path, commitsItems.commits, true)
     }
 
     static _templateCompareFloatingFilterTemplate = (

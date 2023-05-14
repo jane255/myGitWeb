@@ -9,7 +9,7 @@ import config
 from api.api_model.enum import EnumCheckoutType
 from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, RepoStats, \
     ResponseRepoCommits, ResponseRepoBranches, RepoOverview, ResponseRepoReleases, ResponseRepoCommitHash, \
-    ResponseRepoCompare
+    ResponseRepoCompare, CompareCommitsItems
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -62,7 +62,7 @@ class ServiceRepo:
             checkout_type=checkout_type,
             checkout_name=checkout_name
         )
-        log("entries", entries)
+        # log("entries", entries)
         # 菜单栏
         repo_overview = cls.parse_repo_overview(
             repo_name=repo_name,
@@ -623,15 +623,34 @@ class ServiceRepo:
         assert isinstance(diff, pygit2.Diff)
         patch_text_list = [patch.text for patch in diff]
 
-        # 分支 commit 对比
-        # compare 基于 base 分支某 commit 上的新创建分支，列出该 commit 之后的所有 compare commits
-        if len(patch_text_list) > 0:
-            pass
-
         response = ResponseRepoCompare(
             base=base,
             compare=compare,
             patch_text_list=patch_text_list,
             branch_list=cls.get_branch_list(repo_name=repo_name, user_id=user.id),
         )
+        if len(patch_text_list) > 0:
+            # 分支 commit 对比
+            # compare 基于 base 分支某 commit 上的新创建分支，列出该 commit 之后的所有 compare commits
+            base_branch = repo.branches[base]
+            base_commit = base_branch.peel()
+            base_commits = list(repo.walk(base_commit.id, pygit2.GIT_SORT_TIME))
+            #
+            compare_branch = repo.branches[compare]
+            compare_commit = compare_branch.peel()
+            diff_commits = []
+            start, end = None, compare_commit.hex
+            for commit in repo.walk(compare_commit.id, pygit2.GIT_SORT_TIME):
+                if base_commits.count(commit) > 0:
+                    start = commit.hex
+                    break
+                item = cls.parse_commit_item(commit)
+                diff_commits.append(item)
+            commits_items = CompareCommitsItems(
+                start=start,
+                end=end,
+                commits=diff_commits
+            )
+            response.commits_items = commits_items
+
         return response.dict()
