@@ -1313,7 +1313,13 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static _parseCommitDiffList = (repoPath: RepoPath, patchTextList: string[], path: string, isSplitView: boolean=false) => {
+    static _parseCommitDiffList = (
+        repoPath: RepoPath,
+        patchTextList: string[],
+        path: string,
+        isSplitView: boolean=false,
+        isGrid: boolean=false
+    ) => {
         // 总加行树
         let additions: number = 0
         // 总减行树
@@ -1509,8 +1515,10 @@ class RepoContainer {
                 </ol>
             </div>
         `
-        appendHtml(this.bodyWrapperSel, t)
-        appendHtml(this.bodyWrapperSel, file)
+        // 添加
+        let sel = isGrid ? e(`.sixteen-wide-column-page-grid`) : this.bodyWrapperSel
+        appendHtml(sel, t)
+        appendHtml(sel, file)
     //
     }
 
@@ -1616,180 +1624,162 @@ class RepoContainer {
         let path = target.dataset.path
         APIContainer.repoTarget(path, function (r) {
             let response = JSON.parse(r)
-            let resp: ResponseRepoCommitHash = response.data
+            let resp: ResponseRepoCompare = response.data
             log("response data", resp)
             let repoPath: RepoPath = self.repoForPath(path)
             // 清空页面 body-wrapper
             self._clearBodyWrapper()
-        // //    设置布局
-        //     self._setRepositoryCommitDiff()
-        // //    设置 body-wrapper 格局
-        //     self._setBodyWrapperSplitView()
-        //    // 增加 header
-        //     self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
-        // //    增加 list
-        //     self._parseCommitDiffList(repoPath, resp.patch_text_list, path, true)
+        //    设置布局
+            self._setRepositoryCompare()
+        // 主分支栏、对比分支栏、分支对比详情
+            self._parseBodyWrapperCompare(repoPath, resp, path)
         })
     }
-}
 
-class RepoEvent {
+    static _setRepositoryCompare = () => {
+        let repositorySel = e(`.repository`)
+        repositorySel.className = 'repository compare pull diff'
+        // ui-tabs-container
+        let selTabsContainer = e(`.ui-tabs-container`)
+        if (selTabsContainer !== null) {
+            selTabsContainer.remove()
+        }
+        // ui-tabs-divider
+        let selTabsDivider = e(`.ui-tabs-divider`)
+        if (selTabsDivider !== null) {
+            selTabsDivider.remove()
+        }
+        // append ui-divider
+        let selDivider = e(`.ui-divider`)
+        if (selDivider === null) {
+            let headerWrapper = e(`.header-wrapper`)
+            appendHtml(headerWrapper, `<div class="ui divider ui-divider"></div>`)
+        }
+    }
 
-    static enter = (target: HTMLSelectElement) => {
-        let path = target.dataset.path
-        // 说明访问的是主路径
-        if (path.includes('suffix')) {
-            let repoPath = RepoContainer.repoForPath(path)
-            log("repoPath", repoPath)
-            APIContainer.repoTarget(`${path}`, function (r) {
-                let response = JSON.parse(r)
-                log("response:", response.data)
-                let res: ResponserRepoSuffix = response.data
-                if (repoPath.suffixType === EnumFileType.dir) {
-                    // 进入文件二级目录
-                    let params: ParamsEnterSecondaryDir = {
-                        entries: res.entries,
-                        repoPath: repoPath,
-                        latest_commit: res.latest_commit,
-                        repo_overview: res.repo_overview,
-                    }
-                    RepoContainer.enterSecondaryDir(params)
+    static _parseBodyWrapperCompare = (
+        repoPath: RepoPath,
+        response: ResponseRepoCompare,
+        path: string
+    ) => {
+        // 主分支的菜单栏
+        let baseFloatingFilterTemplate = this._templateCompareFloatingFilterTemplate(
+            repoPath,
+            response.branch_list,
+            response.base,
+            response.compare
+        )
+        // 对比分支的菜单栏
+        let compareFloatingFilterTemplate = this._templateCompareFloatingFilterTemplate(
+            repoPath,
+            response.branch_list,
+            response.base,
+            response.compare,
+            false
+        )
+
+        // 分支对比
+        let compareSegmentTemplate: string = ``
+        if (response.patch_text_list.length === 0) {
+            compareSegmentTemplate = `
+                <div class="ui segment">
+                    There is nothing to compare because base and head branches are even.
+                </div>
+            `
+        } else {
+            compareSegmentTemplate = `
+                <form></form>
+            `
+        }
+        //
+        let t = `
+          <div class="sixteen wide column page grid sixteen-wide-column-page-grid">
+            <h2 class="ui header">
+                Compare Changes
+                <div class="sub header">Compare two branches and make a pull request for changes.</div>
+            </h2>
+        
+            <div class="ui segment choose branch">
+                <span class="octicon octicon-git-compare"></span>
+                ${baseFloatingFilterTemplate}
+                    ...
+                ${compareFloatingFilterTemplate}
+            </div>
+                ${compareSegmentTemplate}
+        </div>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+    //
+        if (response.patch_text_list.length > 0) {
+            this._parseCompareSegment(response.patch_text_list, repoPath, path)
+        }
+    }
+
+    static _templateCompareFloatingFilterTemplate = (
+        repoPath: RepoPath,
+        branchList: string[],
+        base: string='',
+        compare: string='',
+        isBase: boolean=true
+    ) => {
+        //
+        // 浮动器显示
+        let floatingText: string = isBase ? `base: ${base}` : `compare: ${compare}`
+
+        // 分支菜单栏
+        let menuBranches: string = ``
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        for (let string of branchList) {
+            // 主分支
+            if (isBase) {
+                if (base === string) {
+                    menuBranches += `
+                        <div class="selected item" data-path="/${username}/${repoName}/compare/${string}...${compare}" data-action="compare">${string}</div>
+                    `
                 } else {
-                    // 解析文件
-                    let params: ParamsEnterFile = {
-                        repoPath: repoPath,
-                        content: res.content,
-                        repo_overview: res.repo_overview,
-                    }
-                    RepoContainer.enterFile(params)
+                    menuBranches += `
+                        <div class=" item" data-path="/${username}/${repoName}/compare/${string}...${compare}" data-action="compare">${string}</div>
+                    `
                 }
-            })
-        } else {
-            RepoContainer.initRepo(path)
-        }
-    }
-
-    static quit = (target: HTMLSelectElement) => {
-        let path: string = target.dataset.path
-        if (path.includes('suffix')) {
-            let repoPath = RepoContainer.repoForPath(path)
-            APIContainer.repoTarget(`${path}`, function (r) {
-                let response = JSON.parse(r)
-                log("response:", response.data)
-                let res: ResponserRepoSuffix = response.data
-                // 进入文件二级目录
-                let params: ParamsEnterSecondaryDir = {
-                    entries: res.entries,
-                    repoPath: repoPath,
-                    latest_commit: res.latest_commit,
-                    repo_overview: res.repo_overview,
+            //    对比分支
+            } else {
+                if (compare === string) {
+                    menuBranches += `
+                        <div class="selected item" data-path="/${username}/${repoName}/compare/${base}...${string}" data-action="compare">${string}</div>
+                    `
+                } else {
+                    menuBranches += `
+                        <div class=" item" data-path="/${username}/${repoName}/compare/${base}...${string}" data-action="compare">${string}</div>
+                    `
                 }
-                RepoContainer.enterSecondaryDir(params)
-            })
-        } else {
-            RepoContainer.initRepo(path)
-        }
-    }
-
-    // 监听浮动选择器
-    static visible = () => {
-        //
-        let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
-        floatingBranchSel.className += ' active visible'
-        //
-        let menuBranchSel: HTMLSelectElement = e(`.class-floating-menu`)
-        menuBranchSel.className += ' transition visible'
-        menuBranchSel.style.display = 'block !important'
-        // 设置 body 的 dataset 为 visible 状态，开始统计点击 visible 状态
-        let chooseSel = e(`body`)
-        chooseSel.dataset.visible = "0"
-    }
-
-    // 监听浮动选择器
-    static checkout = (target: HTMLSelectElement) => {
-        let path: string = target.dataset.path
-        let arg: string = path.split('?')[0].split('/')[3]
-        if (arg === 'src') {
-            this.enter(target)
-        } else if (arg === 'commits') {
-            RepoContainer.parseCommits(target)
-        } else if (arg === 'branches') {
-            RepoContainer.parseBranches(target)
-        }
-    }
-
-    // 监听点击事件，假设这时候有浮动的过滤器展开了，设置为关闭
-    static bindClick = () => {
-        bindEvent('body', 'click', function (event) {
-            let bodySel = e('body')
-            let target = event.target as HTMLSelectElement
-            // 之所以多这一步设置为 "1" 的状态，是因为这一次监听点击跟上面的监听 visible 点击是同步发生的，所以需要多走一步
-            if (bodySel.dataset.visible == '0') {
-                bodySel.dataset.visible = "1"
-
-            } else if (e('body').dataset.visible == '1' && !target.className.includes('text') && !target.className.includes('item')) {
-                // visible 设置为 -1
-                bodySel.dataset.visible = "-1"
-                // 关闭浮动器
-                let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
-                let floatingBranchClassNames: string[] = floatingBranchSel.className.split(' ')
-                floatingBranchSel.className = floatingBranchClassNames.splice(0, floatingBranchClassNames.length - 2).join(' ')
-                //
-                let menuBranchSel: HTMLSelectElement = e(`.class-floating-menu`)
-                let menuBranchSelClassNames = menuBranchSel.className.split(' ')
-                menuBranchSel.className = menuBranchSelClassNames.splice(0, menuBranchSelClassNames.length - 2).join(' ')
-                menuBranchSel.style.display = 'none'
             }
-        })
-    }
-
-    // 监听 branch 和 tag 显示列表
-    static parseScrolling = (target: HTMLSelectElement) => {
-        // 设置文字变黑
-        target.className += ' black'
-        // 设置对面文字变蓝
-        let checkoutText = target.className.includes('class-checkout-text-branch') ? 'class-checkout-text-tag' : 'class-checkout-text-branch'
-        let checkoutTextSel = e(`.${checkoutText}`)
-        checkoutTextSel.className = `text ${checkoutText}`
-        // 设置父元素指向的列表展示出来
-        let parent = target.parentElement
-        let targetId = parent.dataset.target
-        let targetSel = e(`${targetId}`)
-        targetSel.style.display = 'block'
-        // 设置对面列表隐藏
-        let listId = targetId === '#tag-list' ? '#branch-list' : '#tag-list'
-        let listSel = e(`${listId}`)
-        listSel.style.display = 'none'
-    }
-
-    static showDiffStats = (target: HTMLSelectElement) => {
-        let targetId = target.dataset.target
-        let sel = e(`${targetId}`)
-        if (sel.style.display === 'none' || sel.style.display.length == 0) {
-            sel.style.display = 'block'
-        } else {
-            sel.style.display = 'none'
         }
+        // 配置第一句
+        let div: string = isBase ? `<div class="ui floating filter dropdown class-floating-filter-dropdown" data-no-results="No results found." tabindex="0">` : `<div class="ui floating filter dropdown class-floating-filter-dropdown" tabindex="0">`
+        return `
+            ${div}
+                <div class="ui basic small button" data-action="visible">
+                    <span class="text">${floatingText}</span>
+                    <i class="dropdown icon" tabindex="0">
+                        <div class="menu" tabindex="-1"></div>
+                    </i>
+                </div>
+                <div class="menu transition hidden class-floating-menu" tabindex="-1">
+                    <div class="ui icon search input">
+                        <i class="filter icon"></i>
+                        <input name="search" placeholder="Filter branch...">
+                    </div>
+                    <div class="scrolling menu">
+                        ${menuBranches}                           
+                    </div>
+                </div>
+            </div>
+        `
     }
-}
 
-class ActionRepo extends Action {
-    static eventActions = {
-        'click': {
-            'enter': RepoEvent.enter,
-            'quit': RepoEvent.quit,
-            'visible': RepoEvent.visible,
-            'checkout': RepoEvent.checkout,
-            'scrolling': RepoEvent.parseScrolling,
-            'showDiffStats': RepoEvent.showDiffStats,
-        //
-            'commits': RepoContainer.parseCommits,
-            'branches': RepoContainer.parseBranches,
-            'releases': RepoContainer.parseReleases,
-            'hashDiff': RepoContainer.parseHashDiff,
-            'splitView': RepoContainer.splitView,
-            'unifiedView': RepoContainer.parseHashDiff,
-            'compare': RepoContainer.parseCompare,
-        },
+    static _parseCompareSegment = (patchTextList: string[], repoPath: RepoPath, path: string) => {
+        //    增加 list
+        this._parseCommitDiffList(repoPath, patchTextList, path, false, true)
     }
 }

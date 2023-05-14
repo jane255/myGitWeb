@@ -210,3 +210,16 @@ def repo_releases(username: str, repo_name: str):
         user=user,
     )
     return response
+
+
+# 仓库 compare
+@main.route('/<username>/<repo_name>/compare/<branches>', methods=['GET'])
+@login_required
+def repo_compare(username: str, repo_name: str, branches: str):
+    user = current_user()
+    response: t.Dict = ServiceRepo.repo_compare(
+        repo_name=repo_name,
+        user=user,
+        branches=branches,
+    )
+    return response

@@ -8,7 +8,8 @@ from git import Repo
 import config
 from api.api_model.enum import EnumCheckoutType
 from api.api_model.index import ResponseRepoDetail, EnumFileType, ResponseRepoSuffix, LatestCommitItem, RepoStats, \
-    ResponseRepoCommits, ResponseRepoBranches, RepoOverview, ResponseRepoReleases, ResponseRepoCommitHash
+    ResponseRepoCommits, ResponseRepoBranches, RepoOverview, ResponseRepoReleases, ResponseRepoCommitHash, \
+    ResponseRepoCompare
 from models.repo import MyRepo
 from models.user import User
 from utils import log, timestamp_to_date
@@ -603,5 +604,31 @@ class ServiceRepo:
             commit=commit_item,
             parent_id=str(parent_id) if parent_id is not None else parent_id,
             patch_text_list=patch_text_list,
+        )
+        return response.dict()
+
+    @classmethod
+    def repo_compare(cls, repo_name: str, user: User, branches: str) -> t.Dict:
+        # 解析两个分支
+        base, compare = branches.split('...')
+        log("分支对比 -- ", base, compare)
+
+        # 分支对比
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user.id)
+        diff = repo.diff(base, compare)
+        # repo.diff 返回 pygit2.Diff 对象
+        assert isinstance(diff, pygit2.Diff)
+        patch_text_list = [patch.text for patch in diff]
+
+        # 分支 commit 对比
+        # compare 基于 base 分支某 commit 上的新创建分支，列出该 commit 之后的所有 compare commits
+        if len(patch_text_list) > 0:
+            pass
+
+        response = ResponseRepoCompare(
+            base=base,
+            compare=compare,
+            patch_text_list=patch_text_list,
+            branch_list=cls.get_branch_list(repo_name=repo_name, user_id=user.id),
         )
         return response.dict()

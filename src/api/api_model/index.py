@@ -122,3 +122,13 @@ class ResponseRepoCommitHash(BaseModel):
     commit: LatestCommitItem
     parent_id: str = Field(default=None)
     patch_text_list: t.List[str]
+
+
+# /repo/compare
+class ResponseRepoCompare(BaseModel):
+    """结构"""
+    base: str
+    compare: str
+    patch_text_list: t.List[str]
+    branch_list: t.List[str]
+
