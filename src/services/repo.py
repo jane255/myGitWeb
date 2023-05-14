@@ -62,7 +62,7 @@ class ServiceRepo:
             checkout_type=checkout_type,
             checkout_name=checkout_name
         )
-        # log("entries", entries)
+        log("entries", entries)
         # 菜单栏
         repo_overview = cls.parse_repo_overview(
             repo_name=repo_name,
@@ -146,6 +146,9 @@ class ServiceRepo:
             checkout_name: str = 'master'
     ) -> t.List[t.Dict]:
         commit = cls.commit_for_checkout_type(repo_name, user_id, checkout_type, checkout_name)
+        if isinstance(commit, list):
+            return []
+
         tree = commit.tree
         # 从根目录的 tree 对象或者 path 开始解析
         # 递归地解析出所有文件/文件夹

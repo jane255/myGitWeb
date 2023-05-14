@@ -24,6 +24,7 @@ const ajax = (method: string, path: string, data: Object, responseCallback: Resp
     a.send(JSON.stringify(data))
     a.onreadystatechange = () => {
         if (a.readyState === XMLHttpRequest.DONE) {
+            log("api response ----", JSON.parse(a.response).data)
             responseCallback(a.response)
         }
     }

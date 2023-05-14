@@ -5,10 +5,8 @@ class RepoEvent {
         // 说明访问的是主路径
         if (path.includes('suffix')) {
             let repoPath = RepoContainer.repoForPath(path)
-            log("repoPath", repoPath)
             APIContainer.repoTarget(`${path}`, function (r) {
                 let response = JSON.parse(r)
-                log("response:", response.data)
                 let res: ResponserRepoSuffix = response.data
                 if (repoPath.suffixType === EnumFileType.dir) {
                     // 进入文件二级目录
@@ -40,7 +38,6 @@ class RepoEvent {
             let repoPath = RepoContainer.repoForPath(path)
             APIContainer.repoTarget(`${path}`, function (r) {
                 let response = JSON.parse(r)
-                log("response:", response.data)
                 let res: ResponserRepoSuffix = response.data
                 // 进入文件二级目录
                 let params: ParamsEnterSecondaryDir = {
@@ -58,10 +55,10 @@ class RepoEvent {
 
     // 监听浮动选择器
     static visible = (target) => {
-        //
+        // 找到 target 的父元素浮动选择器
         let floatingBranchSel: HTMLSelectElement = target.closest(`.class-floating-filter-dropdown`)
         floatingBranchSel.className += ' active visible'
-        //
+        // 找到父元素下的 class-floating-menu 子元素
         let menuBranchSel: HTMLSelectElement = floatingBranchSel.querySelector(`.class-floating-menu`)
         menuBranchSel.className += ' transition visible'
         menuBranchSel.style.display = 'block !important'
@@ -77,9 +74,9 @@ class RepoEvent {
         if (arg === 'src') {
             this.enter(target)
         } else if (arg === 'commits') {
-            RepoContainer.parseCommits(target)
+            this.parseCommits(target)
         } else if (arg === 'branches') {
-            RepoContainer.parseBranches(target)
+            this.parseBranches(target)
         }
     }
 
@@ -95,7 +92,6 @@ class RepoEvent {
             } else if (e('body').dataset.visible == '1' && e(`.class-floating-filter-dropdown`).className.includes('active') && !target.className.includes('text') && !target.className.includes('item')) {
                 // visible 设置为 -1
                 bodySel.dataset.visible = "-1"
-                log("走到了这里----------------")
                 // 关闭浮动器
                 let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
                 let floatingBranchClassNames: string[] = floatingBranchSel.className.split(' ')
@@ -137,6 +133,148 @@ class RepoEvent {
             sel.style.display = 'none'
         }
     }
+//
+    // 进入 commits
+    static parseCommits = (target: HTMLSelectElement) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let responseRepoCommits: ResponseRepoCommits = response.data
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+                        // 设置布局
+            self._setRepositoryCommits()
+            // 添加二级菜单，包括分支栏
+            let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
+                repoPath: self.repoForPath(path),
+                repoOverview: responseRepoCommits.repo_overview,
+            }
+            self._parseCommitsSecondaryMenu(paramsParseSecondaryMenu)
+            // 添加commit
+            self._parseCommitsTable(path, responseRepoCommits.commit_list)
+        })
+    }
+
+    static parseBranches = (target: HTMLSelectElement) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        APIContainer.repoBranches(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoBranches = response.data
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+            // 设置布局
+            self._setRepositoryBranches(path)
+            // 设置菜单
+            self._parseNavbar(repoPath, path)
+            // 设置 default
+            self._parseDefaultBranch(resp.default, repoPath, path)
+            // 设置 actives
+            self._parseActiveBranches(resp.active_list, repoPath, path)
+        })
+    }
+
+    static parseReleases = (target: HTMLSelectElement) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoReleases = response.data
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+        //    设置 release
+            self._setRepositoryReleases()
+        //    增加 header
+            self._parseReleasesHeader(repoPath)
+        //    增加 release list
+            self._parseReleasesList(repoPath, resp.release_list)
+        })
+    }
+
+    static parseHashDiff = (target) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoCommitHash = response.data
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+        //    设置布局
+            self._setRepositoryCommitDiff()
+            self._setBodyWrapperCommitDiff()
+        //    增加 header
+            self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
+        //    增加 list
+            self._parseCommitDiffList(repoPath, resp.patch_text_list, path)
+        })
+    }
+
+    static splitView = (target) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        let repoPath: RepoPath = self.repoForPath(path)
+        if (repoPath.target === 'commit') {
+            APIContainer.repoTarget(path, function (r) {
+                let response = JSON.parse(r)
+                // diff commit 的页面
+                let resp: ResponseRepoCommitHash = response.data
+                    // 清空页面 body-wrapper
+                self._clearBodyWrapper()
+                //    设置布局
+                self._setRepositoryCommitDiff()
+                //    设置 body-wrapper 格局
+                self._setBodyWrapperSplitView()
+                   // 增加 header
+                self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
+                //    增加 list
+                self._parseCommitDiffList(repoPath, resp.patch_text_list, path, true)
+            })
+        } else if (repoPath.target === 'compare') {
+            APIContainer.repoTarget(path, function (r) {
+                let response = JSON.parse(r)
+                let resp: ResponseRepoCompare = response.data
+                let repoPath: RepoPath = self.repoForPath(path)
+                // 清空页面 body-wrapper
+                self._clearBodyWrapper()
+            //    设置布局
+                self._setRepositoryCompare()
+            // 主分支栏、对比分支栏、分支对比详情
+                self._parseBodyWrapperCompare(repoPath, resp, path, true)
+            })
+        }
+    }
+
+    static unifiedView = (target) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        let repoPath: RepoPath = self.repoForPath(path)
+        if (repoPath.target === 'commit') {
+            this.parseHashDiff(target)
+        } else if (repoPath.target === 'compare') {
+            this.parseCompare(target)
+        }
+    }
+
+    static parseCompare = (target) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoCompare = response.data
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+        //    设置布局
+            self._setRepositoryCompare()
+        // 主分支栏、对比分支栏、分支对比详情
+            self._parseBodyWrapperCompare(repoPath, resp, path)
+        })
+    }
+
 }
 
 class ActionRepo extends Action {
@@ -149,13 +287,13 @@ class ActionRepo extends Action {
             'scrolling': RepoEvent.parseScrolling,
             'showDiffStats': RepoEvent.showDiffStats,
         //
-            'commits': RepoContainer.parseCommits,
-            'branches': RepoContainer.parseBranches,
-            'releases': RepoContainer.parseReleases,
-            'hashDiff': RepoContainer.parseHashDiff,
-            'splitView': RepoContainer.splitView,
-            'unifiedView': RepoContainer.parseHashDiff,
-            'compare': RepoContainer.parseCompare,
+            'commits': RepoEvent.parseCommits,
+            'branches': RepoEvent.parseBranches,
+            'releases': RepoEvent.parseReleases,
+            'hashDiff': RepoEvent.parseHashDiff,
+            'splitView': RepoEvent.splitView,
+            'unifiedView': RepoEvent.unifiedView,
+            'compare': RepoEvent.parseCompare,
         },
     }
 }

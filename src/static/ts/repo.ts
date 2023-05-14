@@ -62,7 +62,6 @@ class RepoContainer {
         APIContainer.repoTarget(url, function (r) {
             let response = JSON.parse(r)
             let responseRepoDetail: ResponseRepoDetail = response.data
-            log("responseRepoDetail", responseRepoDetail)
             // 设置左上角用户名和仓库名
             self._parseRepoName(username, repoName)
             // 设置仓库布局类型
@@ -754,7 +753,6 @@ class RepoContainer {
         let username = r.username
         APIContainer.repoTarget(`${path}`, function (r) {
             let response = JSON.parse(r)
-            log("response:", response.data)
             let res: ResponserRepoSuffix = response.data
             let content: string = res.content
             let t = `
@@ -887,29 +885,7 @@ class RepoContainer {
         // }
     }
 
-    // 进入 commits
-    static parseCommits = (target: HTMLSelectElement) => {
-        let self = this
-        let path = target.dataset.path
-        APIContainer.repoTarget(path, function (r) {
-            let response = JSON.parse(r)
-            let responseRepoCommits: ResponseRepoCommits = response.data
-            log("responseRepoCommits", responseRepoCommits)
-            // 清空页面 body-wrapper
-            self._clearBodyWrapper()
-                        // 设置布局
-            self._setRepositoryCommits()
-            // 添加二级菜单，包括分支栏
-            let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
-                repoPath: self.repoForPath(path),
-                repoOverview: responseRepoCommits.repo_overview,
-            }
-            self._parseCommitsSecondaryMenu(paramsParseSecondaryMenu)
-            // 添加commit
-            self._parseCommitsTable(path, responseRepoCommits.commit_list)
-        })
-    }
-
+    // --------------------------- 点击 commits ---------------------------
     static _setRepositoryCommits = () => {
         let repositorySel = e(`.repository`)
         repositorySel.className = 'repository commits'
@@ -995,26 +971,7 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     }
 
-    static parseBranches = (target: HTMLSelectElement) => {
-        let self = this
-        let path = target.dataset.path
-        APIContainer.repoBranches(path, function (r) {
-            let response = JSON.parse(r)
-            let resp: ResponseRepoBranches = response.data
-            let repoPath: RepoPath = self.repoForPath(path)
-            // 清空页面 body-wrapper
-            self._clearBodyWrapper()
-            // 设置布局
-            self._setRepositoryBranches(path)
-            // 设置菜单
-            self._parseNavbar(repoPath, path)
-            // 设置 default
-            self._parseDefaultBranch(resp.default, repoPath, path)
-            // 设置 actives
-            self._parseActiveBranches(resp.active_list, repoPath, path)
-        })
-    }
-
+    // ------------------ parseBranches ---------------------------------
     static _setRepositoryBranches = (path: string) => {
         let repositorySel = e(`.repository`)
         if (path.includes('/branches/all')) {
@@ -1145,24 +1102,7 @@ class RepoContainer {
         appendHtml(sel, item)
     }
 
-    static parseReleases = (target: HTMLSelectElement) => {
-        let self = this
-        let path = target.dataset.path
-        APIContainer.repoTarget(path, function (r) {
-            let response = JSON.parse(r)
-            let resp: ResponseRepoReleases = response.data
-            let repoPath: RepoPath = self.repoForPath(path)
-            // 清空页面 body-wrapper
-            self._clearBodyWrapper()
-        //    设置 release
-            self._setRepositoryReleases()
-        //    增加 header
-            self._parseReleasesHeader(repoPath)
-        //    增加 release list
-            self._parseReleasesList(repoPath, resp.release_list)
-        })
-    }
-
+    // ----------------- parseReleases ------------------------------
     static _setRepositoryReleases = () => {
         let repositorySel = e(`.repository`)
         repositorySel.className = 'repository release'
@@ -1236,26 +1176,7 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, ttt)
     }
 
-    static parseHashDiff = (target) => {
-        let self = this
-        let path = target.dataset.path
-        APIContainer.repoTarget(path, function (r) {
-            let response = JSON.parse(r)
-            let resp: ResponseRepoCommitHash = response.data
-            log("response data", resp)
-            let repoPath: RepoPath = self.repoForPath(path)
-            // 清空页面 body-wrapper
-            self._clearBodyWrapper()
-        //    设置布局
-            self._setRepositoryCommitDiff()
-            self._setBodyWrapperCommitDiff()
-        //    增加 header
-            self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
-        //    增加 list
-            self._parseCommitDiffList(repoPath, resp.patch_text_list, path)
-        })
-    }
-
+    // ---------------- parseHashDiff ------------------------
     static _setRepositoryCommitDiff = () => {
         let repositorySel = e(`.repository`)
         repositorySel.className = 'repository diff'
@@ -1594,48 +1515,12 @@ class RepoContainer {
         }
     }
 
-    static splitView = (target) => {
-        let self = this
-        let path = target.dataset.path
-        APIContainer.repoTarget(path, function (r) {
-            let response = JSON.parse(r)
-            let resp: ResponseRepoCommitHash = response.data
-            log("response data", resp)
-            let repoPath: RepoPath = self.repoForPath(path)
-            // 清空页面 body-wrapper
-            self._clearBodyWrapper()
-        //    设置布局
-            self._setRepositoryCommitDiff()
-        //    设置 body-wrapper 格局
-            self._setBodyWrapperSplitView()
-           // 增加 header
-            self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
-        //    增加 list
-            self._parseCommitDiffList(repoPath, resp.patch_text_list, path, true)
-        })
-    }
-
+    // -------------- splitView --------------------
     static _setBodyWrapperSplitView = () => {
         this.bodyWrapperSel.className += ' fluid padded'
     }
 
-    static parseCompare = (target) => {
-        let self = this
-        let path = target.dataset.path
-        APIContainer.repoTarget(path, function (r) {
-            let response = JSON.parse(r)
-            let resp: ResponseRepoCompare = response.data
-            log("response data", resp)
-            let repoPath: RepoPath = self.repoForPath(path)
-            // 清空页面 body-wrapper
-            self._clearBodyWrapper()
-        //    设置布局
-            self._setRepositoryCompare()
-        // 主分支栏、对比分支栏、分支对比详情
-            self._parseBodyWrapperCompare(repoPath, resp, path)
-        })
-    }
-
+    // --------------- parseCompare ----------------------
     static _setRepositoryCompare = () => {
         let repositorySel = e(`.repository`)
         repositorySel.className = 'repository compare pull diff'
@@ -1660,7 +1545,8 @@ class RepoContainer {
     static _parseBodyWrapperCompare = (
         repoPath: RepoPath,
         response: ResponseRepoCompare,
-        path: string
+        path: string,
+        isSplitView: boolean=false
     ) => {
         // 主分支的菜单栏
         let baseFloatingFilterTemplate = this._templateCompareFloatingFilterTemplate(
@@ -1711,7 +1597,7 @@ class RepoContainer {
         appendHtml(this.bodyWrapperSel, t)
     //
         if (response.patch_text_list.length > 0) {
-            this._parseCompareSegment(response.patch_text_list, repoPath, path)
+            this._parseCompareSegment(response.patch_text_list, repoPath, path, isSplitView)
         }
     }
 
@@ -1778,8 +1664,8 @@ class RepoContainer {
         `
     }
 
-    static _parseCompareSegment = (patchTextList: string[], repoPath: RepoPath, path: string) => {
+    static _parseCompareSegment = (patchTextList: string[], repoPath: RepoPath, path: string, isSplitView: boolean) => {
         //    增加 list
-        this._parseCommitDiffList(repoPath, patchTextList, path, false, true)
+        this._parseCommitDiffList(repoPath, patchTextList, path, isSplitView, true)
     }
 }

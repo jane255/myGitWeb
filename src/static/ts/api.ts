@@ -5,7 +5,7 @@ class API {
         data: apiForm,
         callback: ResponseCallback
     ) {
-        log(`api call ${method} ${path} ${JSON.stringify(data)}`)
+        log(`api call -- ${method} ${path} ${JSON.stringify(data)}`)
         ajax(method, path, data, callback)
     }
 }
