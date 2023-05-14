@@ -176,12 +176,15 @@ def repo_commits(username: str, repo_name: str):
     checkout_name = request.args.get('checkoutName', 'master')
     if checkout_type == EnumCheckoutType.tag.value:
         checkout_name = f'refs/tags/{checkout_name}'
+    # 检查是否有 suffix
+    suffix = request.args.get('suffix')
 
     response: t.Dict = ServiceRepo.repo_commits(
         repo_name=repo_name,
         user=user,
         checkout_type=checkout_type,
         checkout_name=checkout_name,
+        suffix=suffix,
     )
     return response
 

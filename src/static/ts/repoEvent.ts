@@ -275,6 +275,27 @@ class RepoEvent {
         })
     }
 
+    static parseHistory = (target) => {
+        let self = RepoContainer
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let responseRepoCommits: ResponseRepoCommits = response.data
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+            // 设置布局
+            self._setRepositoryCommits()
+            // 添加二级菜单，包括分支栏
+            let paramsParseSecondaryMenu: ParamsParseSecondaryMenu = {
+                repoPath: repoPath,
+                repoOverview: responseRepoCommits.repo_overview,
+            }
+            self._parseCommitsSecondaryMenu(paramsParseSecondaryMenu)
+            // 添加commit
+            self._parseCommitsTable(path, responseRepoCommits.commit_list)
+        })
+    }
 }
 
 class ActionRepo extends Action {
@@ -294,6 +315,7 @@ class ActionRepo extends Action {
             'splitView': RepoEvent.splitView,
             'unifiedView': RepoEvent.unifiedView,
             'compare': RepoEvent.parseCompare,
+            'history': RepoEvent.parseHistory,
         },
     }
 }

@@ -814,8 +814,10 @@ class RepoContainer {
         let username: string = repoPath.username
         let repoName: string = repoPath.repoName
         let checkoutName: string = repoPath.checkoutName
+        let checkoutType: string = repoPath.checkoutType
+        let suffix: string = repoPath.suffix
         // 解析内容
-        let filename = repoPath.suffix.split('/').splice(-1)
+        let filename = suffix.split('/').splice(-1)
         let t: string = `
             <div id="file-content" class="tab-size-8">
                 <h4 class="ui top attached header" id="repo-read-file">
@@ -824,12 +826,12 @@ class RepoContainer {
                     <span class="text grey normal">4 B</span>
                     <div class="ui right file-actions">
                         <div class="ui buttons">
-                            <a class="ui button" href="/${username}/${repoName}/src/a61c249028cd1120582f506a68bf8fecc6a3b099/${filename}">Permalink</a>
-                            <a class="ui button" href="/${username}/${repoName}/commits/${checkoutName}/${filename}">History</a>
-                            <a class="ui button" href="/${username}/${repoName}/raw/${checkoutName}/${filename}">Raw</a>
+                            <a class="ui button" data-path="/">Permalink</a>
+                            <a class="ui button" data-path="/${username}/${repoName}/commits?checkoutType=${checkoutType}&checkoutName=${checkoutName}&suffix=${suffix}" data-action="history">History</a>
+                            <a class="ui button" data-path="/">Raw</a>
                         </div>
-                        <a href="/${username}/${repoName}/_edit/${checkoutName}/${filename}"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
-                        <a href="/${username}/${repoName}/_delete/${checkoutName}/${filename}"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                        <a data-path="/${username}/${repoName}/_edit/${checkoutName}/${suffix}"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                        <a data-path="/${username}/${repoName}/_delete/${checkoutName}/${suffix}"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
                     </div>
                </h4>
           </div>

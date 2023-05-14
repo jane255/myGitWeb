@@ -99,6 +99,7 @@ class ServiceRepo:
         # 获取提交信息
         commit_item = cls.parse_commit_item(commit)
         return commit_item
+
     # 获取仓库的文件列表
     # path: 裸仓库路径
     # checkout_name: 分支名称, 例如 master
@@ -312,6 +313,49 @@ class ServiceRepo:
         return commit_list
 
     @classmethod
+    def get_entry_commit_list(cls, repo_name: str, user_id: int, checkout_type: str, checkout_name: str, suffix: str) -> t.List:
+        repo = cls.repo_for_path(repo_name=repo_name, user_id=user_id)
+        commit = cls.commit_for_checkout_type(repo_name, user_id, checkout_type, checkout_name)
+        # 按照时间顺序获取 commit 列表, commit 的顺序 git log 命令输出的一致, 最新的 commit 在最前
+        # walker 可以看作类似元素为 pygit2.Commit 对象的列表
+        walker = repo.walk(commit.id, pygit2.GIT_SORT_TIME)
+        # walker 是 python 中的迭代器类型, 迭代器只能遍历一次, 所以这里转成真正的列表, 方便使用
+        commits = list(walker)
+
+        commit_list = []
+        for commit in commits:
+            # parent commit (父提交) 指当前提交的上一个提交
+            # 例如某个仓库的提交历史是: a--b--c
+            # 那么，c 是最新的提交，b 是 c 的父提交，a 是 b 的父提交。
+
+            # 假设使用了 git merge 命令合并过分支, 合并分支时创建的提交可能会有多个父提交
+            # 因此这里要循环, 判断每一个 parent commit 和当前 commit 是否有差异
+            parent_ids = commit.parent_ids
+            for pid in parent_ids:
+                # parent_id 是 parent commit 的 commit id
+                # repo[parent_id] 可以通过该 id 找到仓库里的对象
+                parent = repo[pid]
+                # 返回的对象可能是 pygit2.Blob、pygit2.Tree、pygit2.Commit 和 pygit2.Tag
+                # 此处预期是返回 pygit2.Commit
+                assert isinstance(parent, pygit2.Commit)
+
+                # 相当于命令 git diff parent.hex commit.hex
+                diff = repo.diff(parent, commit)
+                # repo.diff 返回 pygit2.Diff 对象
+                assert isinstance(diff, pygit2.Diff)
+
+                # patch 是 git diff 的基本单位, pygit2 是应该按照这个理解设计的, 因此可以将 pygit2.Diff 看作为元素是 pygit2.Patch 类型的列表
+                for patch in diff:
+                    assert isinstance(patch, pygit2.Patch)
+                    # 获取改动的文件的路径
+                    # 如果传入的文件路径和改动的路径相等, 说明当前的 commit 和它的 parent commit 相比, 这个文件发生了改动
+                    f = patch.delta.new_file.path
+                    if f == suffix:
+                        commit_list.append(commit)
+
+        return commit_list
+
+    @classmethod
     def get_branch_list(cls, repo_name: str, user_id: int) -> t.List:
         repo = cls.repo_for_path(repo_name=repo_name, user_id=user_id)
         #         - GIT_BRANCH_LOCAL - return all local branches (set by default)
@@ -401,9 +445,23 @@ class ServiceRepo:
             user: User,
             checkout_type: str,
             checkout_name: str,
+            suffix: str,
     ) -> t.Dict:
-        commits = cls.get_commit_list(repo_name=repo_name, user_id=user.id, checkout_type=checkout_type,
-                                      checkout_name=checkout_name)
+        if len(suffix) > 0:
+            commits = cls.get_entry_commit_list(
+                repo_name=repo_name,
+                user_id=user.id,
+                checkout_type=checkout_type,
+                checkout_name=checkout_name,
+                suffix=suffix,
+            )
+        else:
+            commits = cls.get_commit_list(
+                repo_name=repo_name,
+                user_id=user.id,
+                checkout_type=checkout_type,
+                checkout_name=checkout_name,
+            )
         result = []
         for commit_record in commits:
             item = cls.parse_commit_item(commit_record)
