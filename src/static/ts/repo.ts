@@ -327,8 +327,10 @@ class RepoContainer {
         let secondaryMenuSel: HTMLSelectElement = e(`.class-secondary-menu`)
         let t: string = `
             <div class="fitted item class-git-compare">
-                <a href="/${username}/${repoName}/compare/master...${checkoutName}">
-                    <button class="ui green small button"><i class="octicon octicon-git-compare"></i></button>
+                <a>
+                    <button class="ui green small button" data-path="/${username}/${repoName}/compare/master...${checkoutName}" data-action="compare">
+                    <i class="octicon octicon-git-compare"></i>
+                    </button>
                 </a>
             </div>
         `
@@ -1479,6 +1481,17 @@ class RepoContainer {
             `
         }
 
+        // view 按钮
+        let view: string
+        if (isSplitView) {
+            view = `
+                <a class="ui tiny basic toggle button" data-path="${path}" data-action="unifiedView">Unified View</a>
+            `
+        } else {
+            view = `
+                <a class="ui tiny basic toggle button" data-path="${path}" data-action="splitView">Split View</a>
+            `
+        }
         // 头部
         let t: string = `
             <div class="diff-detail-box diff-box">
@@ -1486,7 +1499,7 @@ class RepoContainer {
                     <i class="fa fa-retweet"></i>
                     <strong> ${patchTextList.length} changed files</strong> with <strong>${additions} additions</strong> and <strong>${deletions} deletions</strong>
                     <div class="ui right">
-                        <a class="ui tiny basic toggle button" data-path="${path}" data-action="splitView">Split View</a>
+                        ${view}
                         <a class="ui tiny basic toggle button" data-target="#diff-files" data-action="showDiffStats">Show Diff Stats</a>
                     </div>
                 </div>
@@ -1598,6 +1611,26 @@ class RepoContainer {
         this.bodyWrapperSel.className += ' fluid padded'
     }
 
+    static parseCompare = (target) => {
+        let self = this
+        let path = target.dataset.path
+        APIContainer.repoTarget(path, function (r) {
+            let response = JSON.parse(r)
+            let resp: ResponseRepoCommitHash = response.data
+            log("response data", resp)
+            let repoPath: RepoPath = self.repoForPath(path)
+            // 清空页面 body-wrapper
+            self._clearBodyWrapper()
+        // //    设置布局
+        //     self._setRepositoryCommitDiff()
+        // //    设置 body-wrapper 格局
+        //     self._setBodyWrapperSplitView()
+        //    // 增加 header
+        //     self._parseCommitDiffHeader(repoPath, resp.commit, resp.parent_id)
+        // //    增加 list
+        //     self._parseCommitDiffList(repoPath, resp.patch_text_list, path, true)
+        })
+    }
 }
 
 class RepoEvent {
@@ -1755,6 +1788,8 @@ class ActionRepo extends Action {
             'releases': RepoContainer.parseReleases,
             'hashDiff': RepoContainer.parseHashDiff,
             'splitView': RepoContainer.splitView,
+            'unifiedView': RepoContainer.parseHashDiff,
+            'compare': RepoContainer.parseCompare,
         },
     }
 }
