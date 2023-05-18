@@ -100,15 +100,15 @@
                         <a class="item" href="/explore/repos">Explore</a>
 
                         <div class="right menu">
-                            <div class="ui dropdown head link jump item poping up" data-content="Create..."
+                            <div class="ui dropdown head link jump item poping up class-floating-filter-dropdown" data-content="Create..."
                                  data-variation="tiny inverted" tabindex="0">
-											<span class="text">
-												<i class="octicon octicon-plus"><span
-                                                        class="sr-only">Create...</span></i>
-												<i class="octicon octicon-triangle-down"></i>
-											</span>
-                                <div class="menu" tabindex="-1">
-                                    <a class="item" href="/repo/create">
+                                <span class="text">
+                                    <i class="octicon octicon-plus"><span
+                                            class="sr-only">Create...</span></i>
+                                    <i class="octicon octicon-triangle-down" data-action="visible"></i>
+                                </span>
+                                <div class="menu class-floating-menu" tabindex="-1">
+                                    <a class="item" data-path="/repo/add" data-action="create">
                                         <i class="octicon octicon-plus"></i> New Repository
                                     </a>
                                     <a class="item" href="/repo/migrate">

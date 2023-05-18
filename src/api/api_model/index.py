@@ -50,6 +50,7 @@ class RepoOverview(BaseModel):
 class ResponseRepoDetail(RepoListItem):
     """结构"""
 
+    description: str = Field(default=None)
     # 统计数据
     repo_stats: RepoStats = Field(default=None)
     # 二级菜单

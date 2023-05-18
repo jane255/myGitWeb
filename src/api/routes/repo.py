@@ -1,7 +1,7 @@
 import json
 import typing as t
 
-from flask import Blueprint, request
+from flask import Blueprint, request, redirect, url_for
 
 from api.api_model.index import ResponseRepoAdd, RepoListItem
 from api.routes import login_required, current_user
@@ -16,12 +16,13 @@ main = Blueprint('repo', __name__)
 @main.route('/add', methods=['POST'])
 @login_required
 def add():
-    form: dict = json.loads(request.get_data(as_text=True))
+    form: dict = request.form
     log("add form", form)
     repo_name: str = form.get("repo_name")
+    description: str = form.get('description', '')
     user: User = current_user()
 
-    add_result = ServiceRepo.add_repo(user_id=user.id, repo_name=repo_name)
+    add_result = ServiceRepo.add_repo(user_id=user.id, repo_name=repo_name, description=description)
     result: bool = add_result[0]
     repo_info: MyRepo = add_result[1]
     #
@@ -31,7 +32,7 @@ def add():
     if result:
         response.repo_id = repo_info.id
         response.repo_name = repo_info.repo_name
-    return response.dict()
+    return redirect(url_for('myself', username=user.username))
 
 
 @main.route('/list', methods=['GET'])

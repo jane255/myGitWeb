@@ -71,7 +71,7 @@ class RepoContainer {
                 // 清空页面 body-wrapper
                 self._clearBodyWrapper()
                 // 添加描述栏
-                self._parseDesc()
+                self._parseDesc(responseRepoDetail.description)
                 // 添加 commits 栏
                 self._parseGitStats(repoPath, responseRepoDetail.repo_stats)
                 // 添加二级菜单，包括分支栏、当前目录栏、新文件栏、克隆栏
@@ -259,10 +259,11 @@ class RepoContainer {
         `)
     }
 
-    static _parseDesc = () => {
+    static _parseDesc = (description: string) => {
+        let d: string = description.length === 0 ? `No Description` : description
         let t: string = `
             <p id="repo-desc">
-                <span class="no-description text-italic">No Description</span>
+                <span class="no-description text-italic">${d}</span>
                 <a class="link" href=""></a>
             </p>
         `
@@ -1689,5 +1690,78 @@ class RepoContainer {
     static _parseCompareSegment = (patchTextList: string[], repoPath: RepoPath, path: string, isSplitView: boolean) => {
         //    增加 list
         this._parseCommitDiffList(repoPath, patchTextList, path, isSplitView, true)
+    }
+
+    // --------------------------- 点击 create Repo ---------------------------
+    static _removeHeaderWrapper = () => {
+        let sel = e(`.header-wrapper`)
+        sel.remove()
+    }
+
+    static _removeBodyWrapper = () => {
+        this.bodyWrapperSel.remove()
+    }
+
+    static _setRepositoryNewRepo = () => {
+        let repositorySel = e(`.repository`)
+        repositorySel.className = 'repository new repo'
+    }
+
+    static _parseNewRepo = (path: string) => {
+        let t =`
+            <div class="ui middle very relaxed page grid">
+                <div class="column">
+                    <form class="ui form" action="${path}" method="post">
+                        <input type="hidden" name="_csrf" value="FnIHN6h5Go96W0Guz8CKc21IjhU6MTY4NDMxNTc2ODA1NzI0NDQ0Mw">
+                            <h3 class="ui top attached header">
+                                New Repository
+                            </h3>
+                        <div class="ui attached segment">
+                            <div class="inline required field ">
+                                <label>Owner</label>
+                                <div class="ui selection owner dropdown" tabindex="0">
+                                    <input type="hidden" id="user_id" name="user_id" value="170667" required="">
+                                        <span class="text">
+                                            <img class="ui mini image" src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
+                                              haxi
+                                        </span>
+                                        <i class="dropdown icon"></i>
+                                        <div class="menu" tabindex="-1">
+                                            <div class="item active selected" data-value="170667">
+                                                <img class="ui mini image" src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
+                                                    haxi
+                                            </div>
+                                        </div>
+                                </div>
+                            </div>
+            
+                            <div class="inline required field ">
+                                <label for="repo_name">Repository Name</label>
+                                <input id="repo_name" name="repo_name" value="" autofocus="" required="">
+                                    <span class="help">A good repository name is usually composed of short, memorable and unique keywords.</span>
+                            </div>
+                            
+                            <div class="inline field ">
+                                <label for="description">Description</label>
+                                <textarea class="autosize" id="description" name="description" rows="3" style="overflow: hidden; overflow-wrap: break-word; resize: none; height: 78px;"></textarea>
+                                <span class="help">Description of repository. Maximum 512 characters length.</span>
+                                <span class="help">Available characters: <span id="descLength">512</span></span>
+                            </div>
+            
+                            <div class="ui divider"></div>
+                          
+                            <div class="inline field">
+                                <label></label>
+                                <button class="ui green button">
+                                    Create Repository
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `
+        let repositorySel = e(`.repository`)
+        appendHtml(repositorySel, t)
     }
 }

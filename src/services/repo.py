@@ -18,7 +18,7 @@ from utils import log, timestamp_to_date
 class ServiceRepo:
 
     @classmethod
-    def add_repo(cls, repo_name: str, user_id: int) -> (bool, t.Optional[MyRepo]):
+    def add_repo(cls, repo_name: str, user_id: int, description: str) -> (bool, t.Optional[MyRepo]):
         if MyRepo.find_by(user_id=user_id, repo_name=repo_name) is not None:
             log(f"仓库:({repo_name})已存在")
             return False, None
@@ -27,14 +27,15 @@ class ServiceRepo:
         repo_suffix: str = cls.create_repo(repo_name=repo_name, user_id=user_id)
         log("repo_suffix", repo_suffix)
         # 增加建库记录
-        my_repo: MyRepo = cls.add_record(repo_name=repo_name, user_id=user_id)
+        my_repo: MyRepo = cls.add_record(repo_name=repo_name, user_id=user_id, description=description)
         return True, my_repo
 
     @staticmethod
-    def add_record(repo_name: str, user_id: int) -> MyRepo:
+    def add_record(repo_name: str, user_id: int, description: str) -> MyRepo:
         d = dict(
             repo_name=repo_name,
             user_id=user_id,
+            description=description,
         )
         my_repo = MyRepo(d)
         my_repo.save()
@@ -56,6 +57,7 @@ class ServiceRepo:
 
     @classmethod
     def repo_detail(cls, repo_name: str, user: User, checkout_type: str, checkout_name: str) -> t.Dict:
+        description: t.Optional[str] = cls.description_for_repo(user_id=user.id, repo_name=repo_name)
         entries: t.List[t.Dict] = cls.repo_entries(
             repo_name=repo_name,
             user_id=user.id,
@@ -73,6 +75,7 @@ class ServiceRepo:
         resp = ResponseRepoDetail(
             entries=entries,
             repo_overview=repo_overview,
+            description=description,
         )
         if len(entries) > 0:
             # 统计
@@ -92,6 +95,11 @@ class ServiceRepo:
             if latest_commit is not None:
                 resp.latest_commit = latest_commit.dict()
         return resp.dict()
+
+    @staticmethod
+    def description_for_repo(repo_name: str, user_id: int) -> str:
+        repo_record = MyRepo.find_by(user_id=user_id, repo_name=repo_name)
+        return '' if repo_record is None else repo_record.description
 
     @classmethod
     def repo_latest_commit(cls, repo_name: str, user_id: int, checkout_type: str, checkout_name: str):

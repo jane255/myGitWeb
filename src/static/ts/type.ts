@@ -107,6 +107,7 @@ interface ResponseRepoDetailDir extends ResponseRepoDetailFile {
 
 // /detail 接口返回
 interface ResponseRepoDetail {
+    description: string
     // # 统计数据
     repo_stats: RepoStats
     // # 二级菜单

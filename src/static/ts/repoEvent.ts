@@ -296,6 +296,32 @@ class RepoEvent {
             self._parseCommitsTable(path, responseRepoCommits.commit_list)
         })
     }
+
+    static createRepo = (target) => {
+        let self = RepoContainer
+        let bodySel = e(`body`)
+        if (e('body').dataset.visible == '1' && e(`.class-floating-filter-dropdown`).className.includes('active') && !target.className.includes('text')) {
+            // visible 设置为 -1
+            bodySel.dataset.visible = "-1"
+            // 关闭浮动器
+            let floatingBranchSel: HTMLSelectElement = e(`.class-floating-filter-dropdown`)
+            let floatingBranchClassNames: string[] = floatingBranchSel.className.split(' ')
+            floatingBranchSel.className = floatingBranchClassNames.splice(0, floatingBranchClassNames.length - 2).join(' ')
+            //
+            let menuBranchSel: HTMLSelectElement = e(`.class-floating-menu`)
+            let menuBranchSelClassNames = menuBranchSel.className.split(' ')
+            menuBranchSel.className = menuBranchSelClassNames.splice(0, menuBranchSelClassNames.length - 2).join(' ')
+            menuBranchSel.style.display = 'none'
+        }
+        // 删除 header-wrapper
+        self._removeHeaderWrapper()
+        // 删除 body-wrapper
+        self._removeBodyWrapper()
+        // 设置布局
+        self._setRepositoryNewRepo()
+        //
+        self._parseNewRepo(target.dataset.path)
+    }
 }
 
 class ActionRepo extends Action {
@@ -316,6 +342,7 @@ class ActionRepo extends Action {
             'unifiedView': RepoEvent.unifiedView,
             'compare': RepoEvent.parseCompare,
             'history': RepoEvent.parseHistory,
+            "create": RepoEvent.createRepo,
         },
     }
 }

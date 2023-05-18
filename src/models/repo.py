@@ -11,3 +11,4 @@ class MyRepo(Model):
         self.id = form.get('id', None)
         self.repo_name = form.get('repo_name', '')
         self.user_id = form.get('user_id', '')
+        self.description = form.get('description', '')
