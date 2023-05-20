@@ -322,6 +322,17 @@ class RepoEvent {
         //
         self._parseNewRepo(target.dataset.path)
     }
+
+    static parseEdit = (target) => {
+        let self = RepoContainer
+        // 清空页面 body-wrapper
+        self._clearBodyWrapper()
+    //    设置布局
+        self._setRepositoryEdit()
+    //    增加 form 表单 edit
+        self._createEditForm(target.dataset.path)
+    }
+
 }
 
 class ActionRepo extends Action {
@@ -343,6 +354,7 @@ class ActionRepo extends Action {
             'compare': RepoEvent.parseCompare,
             'history': RepoEvent.parseHistory,
             "create": RepoEvent.createRepo,
+            "edit": RepoEvent.parseEdit,
         },
     }
 }

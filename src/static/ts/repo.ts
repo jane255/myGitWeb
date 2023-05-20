@@ -831,7 +831,7 @@ class RepoContainer {
                             <a class="ui button" data-path="/${username}/${repoName}/commits?checkoutType=${checkoutType}&checkoutName=${checkoutName}&suffix=${suffix}" data-action="history">History</a>
                             <a class="ui button" data-path="/">Raw</a>
                         </div>
-                        <a data-path="/${username}/${repoName}/_edit/${checkoutName}/${suffix}"><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
+                        <a><i class="octicon octicon-pencil btn-octicon poping up" data-content="Edit this file" data-position="bottom center" data-variation="tiny inverted" data-path="${repoPath.path}" data-action="edit"></i></a>
                         <a data-path="/${username}/${repoName}/_delete/${checkoutName}/${suffix}"><i class="octicon octicon-trashcan btn-octicon btn-octicon-danger poping up" data-content="Delete this file" data-position="bottom center" data-variation="tiny inverted"></i></a>
                     </div>
                </h4>
@@ -1763,5 +1763,133 @@ class RepoContainer {
         `
         let repositorySel = e(`.repository`)
         appendHtml(repositorySel, t)
+    }
+
+    // ---------------------- parseEdit -------------------
+    static _setRepositoryEdit = () => {
+        let repositorySel = e(`.repository`)
+        repositorySel.className = 'repository file editor edit'
+    }
+
+    static _createEditForm = (path: string) => {
+        let self = this
+        let repoPath: RepoPath = self.repoForPath(path)
+        let editSecondaryMenuTemplate = self._parseEditSecondaryMenu(repoPath)
+        let t = `
+            <form class="ui edit form" method="post">
+                <input type="hidden" name="_csrf" value="KvUuhtfCVuV54HCDJG5jiwlza8U6MTY4NDU4NTkxNTc4NDMxMzQwNw">
+                <input type="hidden" name="last_commit" value="35b49e1a9047ed244e0eb564b4e03c7b2c5de7d6">
+                
+                
+                <div class="field">
+                    <div class="ui top attached tabular menu" data-write="write" data-preview="preview" data-diff="diff">
+                        <a class="active item" data-tab="write"><i class="octicon octicon-code"></i> Edit file</a>
+                        <a class="item" id="preview-tab" data-tab="preview" data-url="/api/v1/markdown" data-root-context="/haxi/gitWeb/src/master/" data-context="/haxi/gitWeb/src/master/test/dir1" data-preview-file-modes="markdown" style="display: none;"><i class="octicon octicon-eye"></i> Preview</a>
+                        <a class="item" data-tab="diff" data-url="/haxi/gitWeb/_preview/master/test/dir1/a.txt"><i class="octicon octicon-diff"></i> Preview Changes</a>
+                    </div>
+                    <div class="ui bottom attached active tab segment" data-tab="write">
+                        <textarea id="edit_area" name="content" data-id="repo-gitWeb-test/dir1/a.txt" data-url="/api/v1/markdown" data-context="/haxi/gitWeb" data-markdown-file-exts=".md,.markdown,.mdown,.mkd" data-line-wrap-extensions=".txt,.md,.markdown,.mdown,.mkd" style="display: none;">
+                        haha
+                        </textarea>
+                        <div class="CodeMirror cm-s-default CodeMirror-wrap"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 5px; left: 35px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 30px; margin-bottom: -10px; border-right-width: 20px; min-height: 56px; padding-right: 0px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre><span>xxxxxxxxxx</span></pre><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>3</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 4px; top: 0px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -30px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">1</div></div><pre class=" CodeMirror-line "><span style="padding-right: 0.1px;">haha</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -30px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">2</div></div><pre class=" CodeMirror-line "><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -30px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">3</div></div><pre class=" CodeMirror-line "><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div></div></div></div></div></div><div style="position: absolute; height: 20px; width: 1px; top: 56px; border-bottom: 0px solid transparent;"></div><div class="CodeMirror-gutters" style="height: 320px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 29px;"></div></div></div></div>
+                    </div>
+                    <div class="ui bottom attached tab segment markdown" data-tab="preview">
+                        Loading...
+                    </div>
+                    <div class="ui bottom attached tab segment diff" data-tab="diff">
+                        Loading...
+                    </div>
+                </div>
+
+                <div class="commit-form-wrapper">
+                    <img width="48" height="48" class="ui image commit-avatar" src="https://secure.gravatar.com/avatar/1ef60960c2a690d14a2abbbf63ab0f86?d=identicon">
+                    <div class="commit-form">
+                        <h3>Commit Changes</h3>
+                        <div class="field">
+                            <input name="commit_summary" placeholder="Update 'test/dir1/a.txt'" value="" autofocus="">
+                        </div>
+                        <div class="field">
+                            <textarea name="commit_message" placeholder="Add an optional extended description..." rows="5"></textarea>
+                        </div>
+                        <div class="quick-pull-choice js-quick-pull-choice">
+                            <div class="field">
+                                <div class="ui radio checkbox">
+                                    <input type="radio" class="js-quick-pull-choice-option hidden" name="commit_choice" value="direct" checked="" tabindex="0">
+                                    <label>
+                                        <i class="octicon octicon-git-commit" height="16" width="14"></i>
+                                        Commit directly to the <strong class="branch-name">master</strong> branch.
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="ui radio checkbox">
+                                    <input type="radio" class="js-quick-pull-choice-option hidden" name="commit_choice" value="commit-to-new-branch" tabindex="0">
+                                    <label>
+                                        <i class="octicon octicon-git-pull-request" height="16" width="12"></i>
+                                        Create a <strong>new branch</strong> for this commit and start a pull request.
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="quick-pull-branch-name hide">
+                                <div class="new-branch-name-input field ">
+                                    <i class="octicon octicon-git-branch" height="16" width="10"></i>
+                                    <input type="text" name="new_branch_name" value="" class="input-contrast mr-2 js-quick-pull-new-branch-name" placeholder="New branch name...">
+                                    <span class="text-muted js-quick-pull-normalization-info"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="ui green button">
+                        Commit Changes
+                    </button>
+                    <a class="ui button red" href="/haxi/gitWeb/src/master/test/dir1/a.txt">Cancel</a>
+                </div>
+            </form>
+        `
+        appendHtml(this.bodyWrapperSel, t)
+    }
+
+    static _parseEditSecondaryMenu = (repoPath: RepoPath) => {
+        let username: string = repoPath.username
+        let repoName: string = repoPath.repoName
+        let checkoutType: string = repoPath.checkoutType
+        let checkoutName: string = repoPath.checkoutName
+        let dataPath: string = `/${username}/${repoName}/src?checkoutType=${checkoutType}&checkoutName=${checkoutName}`
+        let section: string = `
+            <a class="section" data-path=${dataPath}>${repoName}</a>
+        `
+        let suffixList: string[] = repoPath.suffix.split('/')
+        dataPath += `&suffix=`
+        for (let i = 0; i < suffixList.length; i++) {
+            let s: string = suffixList[i]
+            // 设置路径拼接
+            if (i == 0) {
+                dataPath += s
+            } else {
+                dataPath += `/${s}`
+                section += `
+                    <div class="divider"> / </div>
+                    <span class="section"><a data-path="${dataPath}&suffixType=dir" data-action="quit">${s}</a></span>
+                `
+            }
+        }
+        let t = `
+            <div class="ui secondary menu">
+                <div class="fitted item treepath">
+                    <div class="ui breadcrumb field ">
+                        
+                        <div class="divider"> / </div>
+                        <span class="section"><a href="/haxi/gitWeb/src/master/test">test</a></span>
+                        <div class="divider"> / </div>
+                        <span class="section"><a href="/haxi/gitWeb/src/master/test/dir1">dir1</a></span>
+                        <div class="divider"> / </div>
+                        <input id="file-name" value="a.txt" placeholder="Name your file..." data-ec-url-prefix="/api/v1/repos/haxi/gitWeb/editorconfig/" required="" autofocus="">
+                        <span class="octicon octicon-info poping up" data-content="To add directory, just type it and press /. To remove a directory, go to the beginning of the field and press backspace." data-position="bottom center" data-variation="tiny inverted"></span>        
+                        <span>or <a href="/haxi/gitWeb/src/master/test/dir1/a.txt">cancel</a></span>
+                        <input type="hidden" id="tree_path" name="tree_path" value="test/dir1/a.txt" required="">
+                    </div>
+                </div>
+            </div>
+        `
     }
 }
