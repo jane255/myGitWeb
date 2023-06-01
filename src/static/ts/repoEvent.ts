@@ -313,6 +313,8 @@ class RepoEvent {
             menuBranchSel.className = menuBranchSelClassNames.splice(0, menuBranchSelClassNames.length - 2).join(' ')
             menuBranchSel.style.display = 'none'
         }
+        // 首页进去的，删除 profile
+        self._removeUserProfile()
         // 删除 header-wrapper
         self._removeHeaderWrapper()
         // 删除 body-wrapper

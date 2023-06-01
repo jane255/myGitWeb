@@ -1693,18 +1693,35 @@ class RepoContainer {
     }
 
     // --------------------------- 点击 create Repo ---------------------------
+    static _removeUserProfile = () => {
+        let sel = e(`.user`)
+        if (sel !== null) {
+            sel.remove()
+        }
+    }
+
     static _removeHeaderWrapper = () => {
         let sel = e(`.header-wrapper`)
-        sel.remove()
+        if (sel !== null) {
+            sel.remove()
+        }
     }
 
     static _removeBodyWrapper = () => {
-        this.bodyWrapperSel.remove()
+        if (this.bodyWrapperSel !== null) {
+            this.bodyWrapperSel.remove()
+        }
     }
 
     static _setRepositoryNewRepo = () => {
         let repositorySel = e(`.repository`)
-        repositorySel.className = 'repository new repo'
+        if (repositorySel === null) {
+            appendHtml(e(`.full`), `
+                <div class="repository new repo"></div>
+            `)
+        } else {
+            repositorySel.className = 'repository new repo'
+        }
     }
 
     static _parseNewRepo = (path: string) => {

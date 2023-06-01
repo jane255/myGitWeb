@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="/static/css/gogs.min.css?v=c53b7e9698524da9a2c80ab2c129ca4e623a25e9">
     <title>Haxi-Gogs</title>
 </head>
-<body>
-<div class="full height">
+<body data-visible="0">
+<div class="full height" >
     <noscript>This website works better with JavaScript</noscript>
     <div class="following bar light">
         <div class="ui container">
@@ -25,15 +25,15 @@
                         <a class="item" href="/">Explore</a>
 
                         <div class="right menu">
-                            <div class="ui dropdown head link jump item poping up" data-content="Create..."
+                            <div class="ui dropdown head link jump item poping up class-floating-filter-dropdown" data-content="Create..."
                                  data-variation="tiny inverted" tabindex="0">
                                             <span class="text">
                                                 <i class="octicon octicon-plus"><span
                                                         class="sr-only">Create...</span></i>
-                                                <i class="octicon octicon-triangle-down"></i>
+                                                <i class="octicon octicon-triangle-down" data-action="visible"></i>
                                             </span>
-                                <div class="menu" tabindex="-1">
-                                    <a class="item" href="/repo/create">
+                                <div class="menu class-floating-menu" tabindex="-1">
+                                    <a class="item" data-path="/repo/add" data-action="create">
                                         <i class="octicon octicon-plus"></i> New Repository
                                     </a>
                                     <a class="item" href="/repo/migrate">
@@ -153,8 +153,11 @@
 <script type="text/javascript" charset="utf-8" src="../static/compileJs/action.js"></script>
 <!-- 业务逻辑 -->
 <script type="text/javascript" charset="utf-8" src="../static/compileJs/repo.js"></script>
+<script type="text/javascript" charset="utf-8" src="../static/compileJs/repoEvent.js"></script>
 <script>
     RepoContainer.initRepoList()
+    ActionRepo.bindEvent()
+    RepoEvent.bindClick()
 </script>
 
 </body>
